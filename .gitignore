@@ -1,0 +1,13 @@
+venv
+frames/*
+video/*
+*.srt
+__pycache__
+backend/panel_layout/layout/page_css
+bubble.js
+dlib-19.24.1-cp311-cp311-win_amd64.whl
+page.js
+*.pkl
+output/*
+audio.mp3
+testing/*
