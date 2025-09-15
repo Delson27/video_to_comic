@@ -158,7 +158,6 @@ def upload_file():
         print(type(f))
         cleanup()
         f.save("video/uploaded.mp4")
-        create_comic()
         copy_template()
         return "Comic created Successfully"
     
@@ -170,7 +169,6 @@ def handle_link():
         link = request.form['link']
         cleanup()
         download_video(link)
-        create_comic()
         copy_template()
         return "Comic created Successfully"
 
