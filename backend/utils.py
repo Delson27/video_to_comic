@@ -233,26 +233,60 @@ def cleanup():
 
 def download_video(url):
     print("Downloading video")
+    # Prefer MP4 video + M4A audio up to 1080p, with robust fallbacks
+    primary_format = (
+        "bv*[ext=mp4][height<=1080]+ba[ext=m4a]/"
+        "bv*[height<=1080]+ba/"          # any video+audio up to 1080p
+        "b[height<=1080]/"               # single file up to 1080p
+        "b"                              # last resort: best available
+    )
+
     ydl_opts = {
-        'outtmpl': f'video/uploaded.%(ext)s',
-        'format': 'best[height<=1080]/best',  # Max 1080p
+        'outtmpl': 'video/uploaded.%(ext)s',
+        'noplaylist': True,
         'merge_output_format': 'mp4',
+        'format': primary_format,
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',
             'preferedformat': 'mp4',
         }],
+        'quiet': False,
+        'no_warnings': True,
     }
+
+    try:
+        from yt_dlp.utils import DownloadError
+    except Exception:
+        DownloadError = Exception
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
-        import glob
-        video_files = glob.glob('video/uploaded.*')
-        if video_files and not os.path.exists('video/uploaded.mp4'):
-            os.rename(video_files[0], 'video/uploaded.mp4')
+    except DownloadError as e:
+        msg = str(e)
+        if "Requested format is not available" in msg:
+            # Fallback: remove 1080p cap and let yt-dlp pick best available, then convert to mp4
+            print("Primary format not available. Retrying with more permissive selection...")
+            fallback_opts = dict(ydl_opts)
+            fallback_opts['format'] = 'bv*+ba/b'
+            try:
+                with yt_dlp.YoutubeDL(fallback_opts) as ydl:
+                    ydl.download([url])
+            except Exception as e2:
+                print(f"Download failed: {e2}")
+                raise
+        else:
+            print(f"Download failed: {e}")
+            raise
     except Exception as e:
         print(f"Download failed: {e}")
         raise
+
+    # Normalize output filename to uploaded.mp4
+    import glob
+    video_files = sorted(glob.glob('video/uploaded.*'))
+    if video_files and not os.path.exists('video/uploaded.mp4'):
+        os.rename(video_files[0], 'video/uploaded.mp4')
 
 def convert_to_embed(url):
     # Regular expression to capture the video ID from the YouTube URL
