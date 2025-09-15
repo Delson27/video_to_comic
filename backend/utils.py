@@ -235,11 +235,24 @@ def download_video(url):
     print("Downloading video")
     ydl_opts = {
         'outtmpl': f'video/uploaded.%(ext)s',
-        'format': f'bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/best[ext=mp4][height<=1080]/best[height<=1080]'
+        'format': 'best[height<=1080]/best',  # Max 1080p
+        'merge_output_format': 'mp4',
+        'postprocessors': [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4',
+        }],
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        import glob
+        video_files = glob.glob('video/uploaded.*')
+        if video_files and not os.path.exists('video/uploaded.mp4'):
+            os.rename(video_files[0], 'video/uploaded.mp4')
+    except Exception as e:
+        print(f"Download failed: {e}")
+        raise
 
 def convert_to_embed(url):
     # Regular expression to capture the video ID from the YouTube URL
