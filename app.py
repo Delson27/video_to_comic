@@ -1,5 +1,6 @@
 
 import os
+import shutil
 import webbrowser
 import time
 import warnings
@@ -174,19 +175,48 @@ def handle_link():
 
 @app.route('/download', methods=['GET'])
 def download():
- # Path to the HTML file you want to convert
- html_file_path = os.path.join(os.getcwd(), 'output/page.html')
- 
- # Path to the output PDF file
- pdf_file_path = os.path.join(os.getcwd(), 'output/comic_strip.pdf')
- 
- # Convert HTML to PDF
- # You might need to install wkhtmltopdf and configure the path
- # Example: config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')
- pdfkit.from_file(html_file_path, pdf_file_path)
- 
- # Send the file to the client for download
- return send_file(pdf_file_path, as_attachment=True)
+    try:
+        output_dir = os.path.join(os.getcwd(), 'output')
+        html_file_path = os.path.join(output_dir, 'page.html')
+        pdf_file_path = os.path.join(output_dir, 'comic_strip.pdf')
+
+        if not os.path.exists(html_file_path):
+            return jsonify({'error': 'page.html not found. Generate the comic first.'}), 404
+
+        # Find wkhtmltopdf binary
+        wkhtml_path = os.environ.get('WKHTMLTOPDF_PATH') or shutil.which('wkhtmltopdf')
+        if not wkhtml_path:
+            # Common Windows install path
+            possible_path = os.path.join('C:\\Program Files\\wkhtmltopdf\\bin', 'wkhtmltopdf.exe')
+            if os.path.exists(possible_path):
+                wkhtml_path = possible_path
+
+        if not wkhtml_path:
+            return jsonify({'error': 'wkhtmltopdf not found. Install it and/or set WKHTMLTOPDF_PATH env var.'}), 500
+
+        config = pdfkit.configuration(wkhtmltopdf=wkhtml_path)
+
+        options = {
+            'enable-local-file-access': None,
+            'quiet': '',
+            'javascript-delay': '1500',
+            'load-error-handling': 'ignore',
+            'no-stop-slow-scripts': None,
+            'page-size': 'A4',
+            'margin-top': '10mm',
+            'margin-right': '10mm',
+            'margin-bottom': '10mm',
+            'margin-left': '10mm',
+        }
+
+        pdfkit.from_file(html_file_path, pdf_file_path, configuration=config, options=options)
+
+        if not os.path.exists(pdf_file_path):
+            return jsonify({'error': 'Failed to generate PDF.'}), 500
+
+        return send_file(pdf_file_path, as_attachment=True)
+    except Exception as e:
+        return jsonify({'error': f'PDF generation failed: {str(e)}'}), 500
 
 # Route to serve the generated comic and its assets
 @app.route('/output/<path:filename>')
