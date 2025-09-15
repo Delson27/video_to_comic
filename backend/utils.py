@@ -233,7 +233,7 @@ def cleanup():
 
 def download_video(url):
     print("Downloading video")
-    # Prefer MP4 video + M4A audio up to 1080p, with robust fallbacks
+    # Prefer MP4 video + M4A audio up to 1080p, with robust fallbacks and YouTube-specific hardening
     primary_format = (
         "bv*[ext=mp4][height<=1080]+ba[ext=m4a]/"
         "bv*[height<=1080]+ba/"          # any video+audio up to 1080p
@@ -252,6 +252,23 @@ def download_video(url):
         }],
         'quiet': False,
         'no_warnings': True,
+        # Harden against YouTube 403 and throttling
+        'retries': 10,
+        'fragment_retries': 10,
+        'skip_unavailable_fragments': True,
+        'concurrent_fragment_downloads': 1,
+        'nocheckcertificate': True,
+        'geo_bypass': True,
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv=117.0) Gecko/20100101 Firefox/117.0',
+            'Accept-Language': 'en-US,en;q=0.5',
+        },
+        'extractor_args': {
+            'youtube': {
+                # Try Android client first to avoid 403 on some endpoints
+                'player_client': ['android', 'web']
+            }
+        }
     }
 
     try:
@@ -260,14 +277,20 @@ def download_video(url):
         DownloadError = Exception
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        # If cookies.txt exists at project root, use it for age/region-restricted content
+        cookies_path = os.path.join(os.getcwd(), 'cookies.txt')
+        effective_opts = dict(ydl_opts)
+        if os.path.exists(cookies_path):
+            effective_opts['cookiefile'] = cookies_path
+
+        with yt_dlp.YoutubeDL(effective_opts) as ydl:
             ydl.download([url])
     except DownloadError as e:
         msg = str(e)
         if "Requested format is not available" in msg:
             # Fallback: remove 1080p cap and let yt-dlp pick best available, then convert to mp4
             print("Primary format not available. Retrying with more permissive selection...")
-            fallback_opts = dict(ydl_opts)
+            fallback_opts = dict(effective_opts)
             fallback_opts['format'] = 'bv*+ba/b'
             try:
                 with yt_dlp.YoutubeDL(fallback_opts) as ydl:
