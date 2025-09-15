@@ -177,10 +177,11 @@ def handle_link():
 def download():
     try:
         output_dir = os.path.join(os.getcwd(), 'output')
-        html_file_path = os.path.join(output_dir, 'page.html')
+        source_html_path = os.path.join(output_dir, 'page.html')
         pdf_file_path = os.path.join(output_dir, 'comic_strip.pdf')
+        print_html_path = os.path.join(output_dir, 'print.html')
 
-        if not os.path.exists(html_file_path):
+        if not os.path.exists(source_html_path):
             return jsonify({'error': 'page.html not found. Generate the comic first.'}), 404
 
         # Find wkhtmltopdf binary
@@ -209,7 +210,61 @@ def download():
             'margin-left': '10mm',
         }
 
-        pdfkit.from_file(html_file_path, pdf_file_path, configuration=config, options=options)
+        # Create a minimal print-only HTML that renders all comic pages without UI controls
+        print_html = """<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\">
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+  <title>Comic Strip Print</title>
+  <link rel=\"stylesheet\" href=\"page.css\">\n<link rel=\"stylesheet\" href=\"bubble.css\">
+  <style>
+    /* Hide navigation/buttons and background for print */
+    body { background: none !important; }
+    .button { display: none !important; }
+    /* Ensure each wrapper becomes its own PDF page */
+    .wrapper { page-break-after: always; max-width: 100%; margin: 0 auto; }
+    .wrapper:last-of-type { page-break-after: auto; }
+  </style>
+  <script src=\"page.js\"></script>
+  <script src=\"page_place.js\"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Render all pages sequentially
+      var container = document.body;
+      for (var p = 0; p < pages.length; p++) {
+        var wrap = document.createElement('div');
+        wrap.className = 'wrapper';
+        var grid = document.createElement('div');
+        grid.className = 'grid-container';
+        for (var i = 1; i <= 12; i++) {
+          var gi = document.createElement('div');
+          gi.className = 'grid-item';
+          gi.id = '_' + i + '_p' + (p+1);
+          grid.appendChild(gi);
+        }
+        wrap.appendChild(grid);
+        container.appendChild(wrap);
+
+        // Temporarily replace query selectors to target this wrapper
+        (function(pageIndex, gridEl){
+          var origQuery = document.querySelector;
+          var origQueryAll = document.querySelectorAll;
+          document.querySelector = function(sel){ if(sel === '.grid-container') return gridEl; return origQuery.call(document, sel); }
+          document.querySelectorAll = function(sel){ if(sel === '.grid-item') return gridEl.querySelectorAll('.grid-item'); return origQueryAll.call(document, sel); }
+          try { placeDialogs(pages[pageIndex]); } finally { document.querySelector = origQuery; document.querySelectorAll = origQueryAll; }
+        })(p, grid);
+      }
+    });
+  </script>
+</head>
+<body></body>
+</html>"""
+
+        with open(print_html_path, 'w', encoding='utf-8') as f:
+            f.write(print_html)
+
+        pdfkit.from_file(print_html_path, pdf_file_path, configuration=config, options=options)
 
         if not os.path.exists(pdf_file_path):
             return jsonify({'error': 'Failed to generate PDF.'}), 500
