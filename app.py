@@ -200,7 +200,7 @@ def download():
         options = {
             'enable-local-file-access': None,
             'quiet': '',
-            'javascript-delay': '1500',
+            'javascript-delay': '4000',
             'load-error-handling': 'ignore',
             'no-stop-slow-scripts': None,
             'page-size': 'A4',
