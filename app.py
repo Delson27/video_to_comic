@@ -211,6 +211,13 @@ def download():
         }
 
         # Create a minimal print-only HTML that renders all comic pages without UI controls
+        # Build absolute file URL to frames to ensure wkhtmltopdf can load images
+        frames_dir = os.path.abspath(os.path.join(os.getcwd(), 'AutoComic', 'frames', 'final'))
+        if not os.path.exists(frames_dir):
+            # Fallback to project-level frames path
+            frames_dir = os.path.abspath(os.path.join(os.getcwd(), 'frames', 'final'))
+        frames_url = 'file:///' + frames_dir.replace('\\', '/') + '/'
+
         print_html = """<!DOCTYPE html>
 <html lang=\"en\">
 <head>
@@ -229,6 +236,8 @@ def download():
   <script src=\"page.js\"></script>
   <script src=\"page_place.js\"></script>
   <script>
+    // Force absolute path for frames to ensure images load in wkhtmltopdf
+    window.path = '__FRAMES_URL__';
     document.addEventListener('DOMContentLoaded', function() {
       // Render all pages sequentially
       var container = document.body;
@@ -260,6 +269,9 @@ def download():
 </head>
 <body></body>
 </html>"""
+
+        # Inject frames url placeholder to avoid f-string brace escaping issues
+        print_html = print_html.replace('__FRAMES_URL__', frames_url)
 
         with open(print_html_path, 'w', encoding='utf-8') as f:
             f.write(print_html)
