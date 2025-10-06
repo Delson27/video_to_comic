@@ -210,6 +210,13 @@ def download():
             'margin-left': '10mm',
         }
 
+        # Build absolute file URL to frames to ensure wkhtmltopdf can load images
+        frames_dir = os.path.abspath(os.path.join(os.getcwd(), 'AutoComic', 'frames', 'final'))
+        if not os.path.exists(frames_dir):
+            # Fallback to project-level frames path
+            frames_dir = os.path.abspath(os.path.join(os.getcwd(), 'frames', 'final'))
+        frames_url = 'file:///' + frames_dir.replace('\\', '/') + '/'
+        
         # Create print HTML that uses the exact same logic as the web viewer
         # Read the original page.html and modify it for print
         with open(source_html_path, 'r', encoding='utf-8') as f:
@@ -230,61 +237,63 @@ def download():
   </style>'''
         )
         
-        # Add script to render all pages sequentially
+        # Add script to render all pages sequentially with absolute paths
         print_html = print_html.replace(
             '</body>',
-            '''<script>
+            f'''<script>
+    // Force absolute path for frames to ensure images load in wkhtmltopdf
+    window.path = '{frames_url}';
+    
     // Override the original page navigation to show all pages
-    document.addEventListener('DOMContentLoaded', function() {
-        var originalPlaceDialogs = placeDialogs;
+    document.addEventListener('DOMContentLoaded', function() {{
         var allWrappers = [];
         
         // Create wrapper for each page
-        for (var p = 0; p < pages.length; p++) {
+        for (var p = 0; p < pages.length; p++) {{
             var wrap = document.createElement('div');
             wrap.className = 'wrapper';
             var grid = document.createElement('div');
             grid.className = 'grid-container';
             
             // Create grid items
-            for (var i = 1; i <= 12; i++) {
+            for (var i = 1; i <= 12; i++) {{
                 var gi = document.createElement('div');
                 gi.className = 'grid-item';
                 gi.id = '_' + i;
                 grid.appendChild(gi);
-            }
+            }}
             
             wrap.appendChild(grid);
             document.body.appendChild(wrap);
-            allWrappers.push({wrapper: wrap, grid: grid, pageIndex: p});
-        }
+            allWrappers.push({{wrapper: wrap, grid: grid, pageIndex: p}});
+        }}
         
         // Render each page using the same logic as the web viewer
-        allWrappers.forEach(function(item) {
+        allWrappers.forEach(function(item) {{
             // Temporarily override selectors to target this specific grid
             var originalQuery = document.querySelector;
             var originalQueryAll = document.querySelectorAll;
             
-            document.querySelector = function(sel) {
+            document.querySelector = function(sel) {{
                 if (sel === '.grid-container') return item.grid;
                 return originalQuery.call(document, sel);
-            };
+            }};
             
-            document.querySelectorAll = function(sel) {
+            document.querySelectorAll = function(sel) {{
                 if (sel === '.grid-item') return item.grid.querySelectorAll('.grid-item');
                 return originalQueryAll.call(document, sel);
-            };
+            }};
             
             // Use the same placeDialogs function as the web viewer
-            try {
+            try {{
                 placeDialogs(pages[item.pageIndex]);
-            } finally {
+            }} finally {{
                 // Restore original selectors
                 document.querySelector = originalQuery;
                 document.querySelectorAll = originalQueryAll;
-            }
-        });
-    });
+            }}
+        }});
+    }});
 </script>
 </body>'''
         )
