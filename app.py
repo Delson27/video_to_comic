@@ -210,68 +210,84 @@ def download():
             'margin-left': '10mm',
         }
 
-        # Create a minimal print-only HTML that renders all comic pages without UI controls
-        # Build absolute file URL to frames to ensure wkhtmltopdf can load images
-        frames_dir = os.path.abspath(os.path.join(os.getcwd(), 'AutoComic', 'frames', 'final'))
-        if not os.path.exists(frames_dir):
-            # Fallback to project-level frames path
-            frames_dir = os.path.abspath(os.path.join(os.getcwd(), 'frames', 'final'))
-        frames_url = 'file:///' + frames_dir.replace('\\', '/') + '/'
-
-        print_html = """<!DOCTYPE html>
-<html lang=\"en\">
-<head>
-  <meta charset=\"UTF-8\">
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-  <title>Comic Strip Print</title>
-  <link rel=\"stylesheet\" href=\"page.css\">\n<link rel=\"stylesheet\" href=\"bubble.css\">
+        # Create print HTML that uses the exact same logic as the web viewer
+        # Read the original page.html and modify it for print
+        with open(source_html_path, 'r', encoding='utf-8') as f:
+            original_html = f.read()
+        
+        # Modify the HTML to hide buttons and add page breaks
+        print_html = original_html.replace(
+            '<body>',
+            '''<body>
   <style>
-    /* Hide navigation/buttons and background for print */
-    body { background: none !important; }
+    /* Hide navigation buttons for print */
     .button { display: none !important; }
-    /* Ensure each wrapper becomes its own PDF page */
-    .wrapper { page-break-after: always; max-width: 100%; margin: 0 auto; }
+    /* Remove background for print */
+    body { background: none !important; }
+    /* Each wrapper becomes a separate PDF page */
+    .wrapper { page-break-after: always; }
     .wrapper:last-of-type { page-break-after: auto; }
-  </style>
-  <script src=\"page.js\"></script>
-  <script src=\"page_place.js\"></script>
-  <script>
-    // Force absolute path for frames to ensure images load in wkhtmltopdf
-    window.path = '__FRAMES_URL__';
+  </style>'''
+        )
+        
+        # Add script to render all pages sequentially
+        print_html = print_html.replace(
+            '</body>',
+            '''<script>
+    // Override the original page navigation to show all pages
     document.addEventListener('DOMContentLoaded', function() {
-      // Render all pages sequentially
-      var container = document.body;
-      for (var p = 0; p < pages.length; p++) {
-        var wrap = document.createElement('div');
-        wrap.className = 'wrapper';
-        var grid = document.createElement('div');
-        grid.className = 'grid-container';
-        for (var i = 1; i <= 12; i++) {
-          var gi = document.createElement('div');
-          gi.className = 'grid-item';
-          gi.id = '_' + i + '_p' + (p+1);
-          grid.appendChild(gi);
+        var originalPlaceDialogs = placeDialogs;
+        var allWrappers = [];
+        
+        // Create wrapper for each page
+        for (var p = 0; p < pages.length; p++) {
+            var wrap = document.createElement('div');
+            wrap.className = 'wrapper';
+            var grid = document.createElement('div');
+            grid.className = 'grid-container';
+            
+            // Create grid items
+            for (var i = 1; i <= 12; i++) {
+                var gi = document.createElement('div');
+                gi.className = 'grid-item';
+                gi.id = '_' + i;
+                grid.appendChild(gi);
+            }
+            
+            wrap.appendChild(grid);
+            document.body.appendChild(wrap);
+            allWrappers.push({wrapper: wrap, grid: grid, pageIndex: p});
         }
-        wrap.appendChild(grid);
-        container.appendChild(wrap);
-
-        // Temporarily replace query selectors to target this wrapper
-        (function(pageIndex, gridEl){
-          var origQuery = document.querySelector;
-          var origQueryAll = document.querySelectorAll;
-          document.querySelector = function(sel){ if(sel === '.grid-container') return gridEl; return origQuery.call(document, sel); }
-          document.querySelectorAll = function(sel){ if(sel === '.grid-item') return gridEl.querySelectorAll('.grid-item'); return origQueryAll.call(document, sel); }
-          try { placeDialogs(pages[pageIndex]); } finally { document.querySelector = origQuery; document.querySelectorAll = origQueryAll; }
-        })(p, grid);
-      }
+        
+        // Render each page using the same logic as the web viewer
+        allWrappers.forEach(function(item) {
+            // Temporarily override selectors to target this specific grid
+            var originalQuery = document.querySelector;
+            var originalQueryAll = document.querySelectorAll;
+            
+            document.querySelector = function(sel) {
+                if (sel === '.grid-container') return item.grid;
+                return originalQuery.call(document, sel);
+            };
+            
+            document.querySelectorAll = function(sel) {
+                if (sel === '.grid-item') return item.grid.querySelectorAll('.grid-item');
+                return originalQueryAll.call(document, sel);
+            };
+            
+            // Use the same placeDialogs function as the web viewer
+            try {
+                placeDialogs(pages[item.pageIndex]);
+            } finally {
+                // Restore original selectors
+                document.querySelector = originalQuery;
+                document.querySelectorAll = originalQueryAll;
+            }
+        });
     });
-  </script>
-</head>
-<body></body>
-</html>"""
-
-        # Inject frames url placeholder to avoid f-string brace escaping issues
-        print_html = print_html.replace('__FRAMES_URL__', frames_url)
+</script>
+</body>'''
+        )
 
         with open(print_html_path, 'w', encoding='utf-8') as f:
             f.write(print_html)
