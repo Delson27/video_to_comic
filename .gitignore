@@ -11,3 +11,5 @@ page.js
 output/*
 audio.mp3
 testing/*
+*.tmp
+
