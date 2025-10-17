@@ -88,7 +88,6 @@ def get_subtitles(file):
     if os.path.exists(extracted_audio):
         os.remove(extracted_audio)
 
-if __name__ == '__main__':
-    get_subtitles('video/joker.mp4')
+
 
 
