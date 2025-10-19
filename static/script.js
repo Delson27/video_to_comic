@@ -97,10 +97,6 @@ function previewComic() {
   window.open("/output/page.html", "_blank");
 }
 
-function downloadComic() {
-  window.location.href = "/download";
-}
-
 // 5. Submit button with progress tracking
 function submitForm() {
   const submitBtn = document.getElementById("submitButton");

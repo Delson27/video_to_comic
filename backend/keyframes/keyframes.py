@@ -99,6 +99,10 @@ def generate_keyframes(video):
         features = _get_features(frames, gpu=False)
         highlight_scores = _get_probs(features, gpu=False)
 
+        # Ensure the 'frames/final' directory exists
+        if not os.path.exists("frames/final"):
+            os.makedirs("frames/final")
+
         try:
             highlight_scores = list(highlight_scores)    
             sorted_indices = [i[0] for i in sorted(enumerate(highlight_scores), key=lambda x: x[1])]

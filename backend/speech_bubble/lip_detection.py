@@ -14,7 +14,12 @@ FACE_AREA = 0.6
 
 # Face detector and landmark detector
 face_detector = dlib.get_frontal_face_detector()   
-landmark_detector = dlib.shape_predictor("backend/speech_bubble/shape_predictor_68_face_landmarks.dat")
+
+# Update the path to use an absolute path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+landmark_path = os.path.join(current_dir, "shape_predictor_68_face_landmarks.dat")
+
+landmark_detector = dlib.shape_predictor(landmark_path)
 
 
 def dist(p1, p2):
@@ -212,6 +217,6 @@ def get_multi_speaker_lips(sub,video, keyframe_face_rects):
     except ZeroDivisionError:
         return (-1,-1)
 
-    
 
-    
+
+

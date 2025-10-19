@@ -116,7 +116,7 @@
             Preview Comic
           </button>
           <button
-            onclick="downloadComic()"
+            onclick="fetch('/generate-pdf', { method: 'GET' }).then(response => response.json()).then(data => alert(data.message || data.error))"
             class="submit-button"
             id="downloadButton"
           >

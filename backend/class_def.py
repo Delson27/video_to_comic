@@ -87,6 +87,11 @@ class bubble:
 
         self.bubble_offset_x = bubble_offset_x
         self.bubble_offset_y = bubble_offset_y
+        # Provide aliases expected by other modules (bubble_x/bubble_y and lip_x/lip_y)
+        self.bubble_x = bubble_offset_x
+        self.bubble_y = bubble_offset_y
+        self.lip_x = lip_x
+        self.lip_y = lip_y
         
         angle = 0
          
