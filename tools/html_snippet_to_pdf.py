@@ -1,144 +1,283 @@
 r"""
-Render an HTML file to an image (PNG), optionally crop a snippet, then embed into a PDF.
+HTML to PDF Converter - Using PyHTML2PDF
+
+Convert HTML files directly to PDF with all resources (CSS, JS, images) preserved.
 
 Dependencies:
-- wkhtmltoimage (part of wkhtmltopdf) must be installed and on PATH or set WKHTMLTOIMAGE_PATH env var.
-- Python packages: pillow, fpdf
-  Install with: pip install pillow fpdf
+- Python packages: pdfkit, pillow
+  Install with: pip install pdfkit pillow
+- wkhtmltopdf system tool
+  Windows: choco install wkhtmltopdf
+  Linux: sudo apt-get install wkhtmltopdf
+  macOS: brew install wkhtmltopdf
 
-Usage example (PowerShell):
-python tools/html_snippet_to_pdf.py --html output/page.html --out output/snippet.pdf
-
-Optional snippet crop (pixels):
---crop x y width height
-
-If wkhtmltoimage isn't available, the script will exit with a helpful message.
+Usage:
+python tools/html_snippet_to_pdf.py --html output_template/page.html --out output/comic.pdf
 """
 
 import argparse
 import os
-import shutil
-import subprocess
 import sys
-from PIL import Image
-from fpdf import FPDF
+import re
+
+try:
+    import pdfkit
+    HAS_PDFKIT = True
+except ImportError:
+    HAS_PDFKIT = False
+    print("⚠ pdfkit not installed. Install with: pip install pdfkit")
+
+try:
+    from bs4 import BeautifulSoup
+    HAS_BEAUTIFULSOUP = True
+except ImportError:
+    HAS_BEAUTIFULSOUP = False
 
 
-def find_wkhtmltoimage():
-    path = os.environ.get('WKHTMLTOIMAGE_PATH') or shutil.which('wkhtmltoimage')
-    if path:
-        return path
-    # common Windows install path
-    possible = os.path.join('C:\\Program Files\\wkhtmltopdf\\bin', 'wkhtmltoimage.exe')
-    if os.path.exists(possible):
-        return possible
+def fix_javascript_paths(html_content, base_html_path):
+    """
+    Fix JavaScript paths to use absolute paths for image loading.
+    Also embeds external scripts inline with fixed paths.
+    
+    Args:
+        html_content: HTML content as string
+        base_html_path: Path to the HTML file
+    
+    Returns:
+        Updated HTML content with fixed paths and embedded scripts
+    """
+    if not HAS_BEAUTIFULSOUP:
+        return html_content
+    
+    try:
+        soup = BeautifulSoup(html_content, 'html.parser')
+        base_dir = os.path.dirname(os.path.abspath(base_html_path))
+        
+        # Find the path to frames/final directory
+        frames_final_path = os.path.join(os.path.dirname(base_dir), 'frames', 'final')
+        frames_final_path = os.path.normpath(frames_final_path)
+        
+        if not os.path.exists(frames_final_path):
+            print(f"⚠ Frames directory not found: {frames_final_path}")
+        else:
+            print(f"✓ Found frames directory: {frames_final_path}")
+        
+        # Convert path for use in JavaScript (just forward slashes)
+        js_frames_path = frames_final_path.replace('\\', '/')
+        
+        # Find and process all script tags
+        for script in soup.find_all('script'):
+            src = script.get('src')
+            
+            if src:
+                # External script - read and embed it inline
+                script_path = os.path.join(base_dir, src)
+                if os.path.exists(script_path):
+                    try:
+                        with open(script_path, 'r', encoding='utf-8') as f:
+                            script_content = f.read()
+                        
+                        # Fix the path variable in the script
+                        if 'path = "../frames/final/"' in script_content:
+                            script_content = script_content.replace(
+                                'path = "../frames/final/"',
+                                f'path = "{js_frames_path}/"'
+                            )
+                            print(f"✓ Fixed {src}: path → {js_frames_path}/")
+                        
+                        # Create new inline script tag
+                        new_script = soup.new_tag('script')
+                        new_script.string = script_content
+                        script.replace(new_script)
+                        print(f"✓ Embedded script: {src}")
+                        
+                    except Exception as e:
+                        print(f"⚠ Could not embed script {src}: {e}")
+            else:
+                # Inline script - modify if it contains path references
+                if script.string:
+                    script_content = script.string
+                    if 'path = "../frames/final/"' in script_content:
+                        script_content = script_content.replace(
+                            'path = "../frames/final/"',
+                            f'path = "{js_frames_path}/"'
+                        )
+                        script.string = script_content
+                        print(f"✓ Fixed inline script path → {js_frames_path}/")
+        
+        # Also fix any static <img> src attributes
+        for img in soup.find_all('img'):
+            src = img.get('src', '')
+            if src and not src.startswith(('http://', 'https://', 'data:', 'file://')):
+                # Convert relative path to absolute
+                abs_path = os.path.normpath(os.path.join(base_dir, src))
+                if os.path.exists(abs_path):
+                    abs_path_url = abs_path.replace('\\', '/')
+                    img['src'] = abs_path_url
+                    print(f"✓ Fixed img src: {src} → {abs_path_url}")
+        
+        return str(soup.prettify())
+    
+    except Exception as e:
+        print(f"⚠ Error fixing paths: {e}")
+        import traceback
+        traceback.print_exc()
+        return html_content
+
+
+def find_wkhtmltopdf():
+    """Find wkhtmltopdf executable in common installation paths."""
+    # Common Windows installation paths
+    possible_paths = [
+        r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe',
+        r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe',
+        r'C:\Program Files\wkhtmltopdf\bin\wkhtmltoimage.exe',
+        r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltoimage.exe',
+    ]
+    
+    # Check environment variable
+    env_path = os.environ.get('WKHTMLTOPDF_PATH')
+    if env_path and os.path.exists(env_path):
+        return env_path
+    
+    # Check PATH
+    from shutil import which
+    if which('wkhtmltopdf'):
+        return which('wkhtmltopdf')
+    
+    # Check common installation paths
+    for path in possible_paths:
+        if os.path.exists(path):
+            return path
+    
     return None
 
 
-def render_html_to_png(wkhtmltoimage, html_path, png_path, width=1200):
-    # Ensure absolute paths so wkhtmltoimage can resolve local references
-    html_abs = os.path.abspath(html_path)
-    png_abs = os.path.abspath(png_path)
-
-    cmd = [
-        wkhtmltoimage,
-        '--quality', '90',
-        '--width', str(width),
-        '--enable-local-file-access',
-        html_abs,
-        png_abs,
-    ]
+def convert_html_to_pdf_simple(html_path, pdf_path, options=None):
+    """
+    Simple direct conversion of HTML to PDF preserving all resources.
+    
+    Args:
+        html_path: Path to HTML file
+        pdf_path: Path to output PDF
+        options: pdfkit options dict
+    """
+    if not HAS_PDFKIT:
+        print("✗ pdfkit not installed")
+        print("  Install with: pip install pdfkit")
+        sys.exit(1)
+    
+    # Find wkhtmltopdf
+    wkhtmltopdf_path = find_wkhtmltopdf()
+    if not wkhtmltopdf_path:
+        print("✗ wkhtmltopdf not found in PATH or common installation locations")
+        print("  Please install it from: https://wkhtmltopdf.org/")
+        print("  Or set WKHTMLTOPDF_PATH environment variable")
+        sys.exit(1)
+    
+    print(f"✓ Found wkhtmltopdf: {wkhtmltopdf_path}")
+    
+    # Default options
+    if options is None:
+        options = {
+            'page-size': 'A4',
+            'margin-top': '0.75in',
+            'margin-right': '0.75in',
+            'margin-bottom': '0.75in',
+            'margin-left': '0.75in',
+            'encoding': "UTF-8",
+            'no-outline': None,
+            'enable-local-file-access': None,
+        }
+    
     try:
-        # capture output so we can show the error messages if it fails
-        result = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if result.stdout:
-            print(result.stdout)
-        if result.stderr:
-            print(result.stderr)
-    except subprocess.CalledProcessError as e:
-        # include stdout/stderr in the raised error for easier debugging
-        out = e.stdout or ''
-        err = e.stderr or ''
-        raise RuntimeError(f"wkhtmltoimage failed (retcode={e.returncode}). stdout:\n{out}\n\nstderr:\n{err}\nCommand: {' '.join(cmd)}")
-
-
-def crop_image(src_png, cropped_png, crop_box):
-    with Image.open(src_png) as im:
-        cropped = im.crop(crop_box)
-        cropped.save(cropped_png)
-
-
-def image_to_pdf(image_path, pdf_path, page_size=(210, 297)):
-    # page_size in mm (A4 default)
-    pdf = FPDF(unit='mm', format=page_size)
-    pdf.add_page()
-    # calculate image display size preserving aspect ratio
-    with Image.open(image_path) as im:
-        img_w_px, img_h_px = im.size
-
-    # convert page size mm -> px by assuming 96 DPI for sizing; we'll instead compute mm
-    # FPDF places images by mm: to fit width of page minus margins
-    margin = 10
-    usable_w_mm = page_size[0] - 2 * margin
-    usable_h_mm = page_size[1] - 2 * margin
-
-    # Use PIL to get DPI if present, otherwise assume 96
-    with Image.open(image_path) as im:
-        dpi = im.info.get('dpi', (96, 96))[0]
-        img_w_mm = img_w_px / dpi * 25.4
-        img_h_mm = img_h_px / dpi * 25.4
-
-    # Scale to fit within usable area
-    scale = min(usable_w_mm / img_w_mm, usable_h_mm / img_h_mm, 1.0)
-    disp_w = img_w_mm * scale
-    disp_h = img_h_mm * scale
-    x = (page_size[0] - disp_w) / 2
-    y = (page_size[1] - disp_h) / 2
-
-    pdf.image(image_path, x=x, y=y, w=disp_w, h=disp_h)
-    pdf.output(pdf_path)
+        # Get absolute path
+        html_abs = os.path.abspath(html_path)
+        pdf_abs = os.path.abspath(pdf_path)
+        
+        print(f"📄 HTML Input: {html_abs}")
+        print(f"📕 PDF Output: {pdf_abs}")
+        
+        # Read HTML and fix all image paths
+        print(f"🔧 Fixing image paths...")
+        with open(html_abs, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        
+        fixed_html = fix_javascript_paths(html_content, html_abs)
+        
+        # Save fixed HTML to temp file
+        temp_html = pdf_abs.replace('.pdf', '.temp.html')
+        with open(temp_html, 'w', encoding='utf-8') as f:
+            f.write(fixed_html)
+        
+        print(f"⏳ Converting... (this may take a moment)")
+        
+        # Convert with explicit wkhtmltopdf path
+        config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+        pdfkit.from_file(temp_html, pdf_abs, options=options, configuration=config)
+        
+        # Clean up temp file
+        if os.path.exists(temp_html):
+            os.remove(temp_html)
+        
+        print(f"✅ Done! PDF saved: {pdf_abs}")
+        print(f"📊 File size: {os.path.getsize(pdf_abs) / 1024 / 1024:.2f} MB")
+        
+        return True
+    
+    except Exception as e:
+        print(f"✗ Error converting HTML to PDF: {e}")
+        return False
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description='Convert HTML file to PDF (preserves all resources)'
+    )
     parser.add_argument('--html', required=True, help='Path to input HTML file')
-    parser.add_argument('--out', required=True, help='Path to output PDF')
-    parser.add_argument('--tmp', default='tools/tmp_render.png', help='Temporary PNG path')
-    parser.add_argument('--crop', nargs=4, type=int, metavar=('X','Y','W','H'), help='Crop box in pixels')
-    parser.add_argument('--width', type=int, default=1200, help='Render width in pixels')
+    parser.add_argument('--out', required=True, help='Path to output PDF file')
+    parser.add_argument('--landscape', action='store_true', help='Use landscape orientation')
+    parser.add_argument('--margin', type=float, default=0.75, help='Page margin in inches')
+    
     args = parser.parse_args()
-
-    html_path = args.html
-    out_pdf = args.out
-    tmp_png = args.tmp
-    cropped_png = tmp_png.replace('.png', '.crop.png')
-
-    if not os.path.exists(html_path):
-        print(f"HTML file not found: {html_path}")
+    
+    # Validate input
+    if not os.path.exists(args.html):
+        print(f"✗ HTML file not found: {args.html}")
+        sys.exit(1)
+    
+    # Prepare output directory
+    os.makedirs(os.path.dirname(args.out), exist_ok=True)
+    
+    # Setup options
+    options = {
+        'page-size': 'A3' if args.landscape else 'A4',
+        'orientation': 'Landscape' if args.landscape else 'Portrait',
+        'margin-top': f'{args.margin}in',
+        'margin-right': f'{args.margin}in',
+        'margin-bottom': f'{args.margin}in',
+        'margin-left': f'{args.margin}in',
+        'encoding': 'UTF-8',
+        'no-outline': None,
+        'enable-local-file-access': None,
+    }
+    
+    print("🎬 HTML to PDF Converter")
+    print("=" * 50)
+    print()
+    
+    # Convert
+    success = convert_html_to_pdf_simple(args.html, args.out, options)
+    
+    if success:
+        print()
+        print("✨ Success! Your comic is ready as PDF")
+        sys.exit(0)
+    else:
+        print()
+        print("❌ Conversion failed")
         sys.exit(1)
 
-    wk = find_wkhtmltoimage()
-    if not wk:
-        print("wkhtmltoimage not found. Install wkhtmltopdf and ensure wkhtmltoimage is on PATH or set WKHTMLTOIMAGE_PATH env var.")
-        sys.exit(1)
-
-    os.makedirs(os.path.dirname(tmp_png), exist_ok=True)
-
-    print(f"Rendering {html_path} -> {tmp_png} using {wk} ...")
-    render_html_to_png(wk, html_path, tmp_png, width=args.width)
-
-    final_image = tmp_png
-    if args.crop:
-        x,y,w,h = args.crop
-        print(f"Cropping to box x={x},y={y},w={w},h={h}")
-        crop_image(tmp_png, cropped_png, (x,y,x+w,y+h))
-        final_image = cropped_png
-
-    print(f"Embedding {final_image} into PDF {out_pdf} ...")
-    os.makedirs(os.path.dirname(out_pdf), exist_ok=True)
-    image_to_pdf(final_image, out_pdf)
-
-    print("Done. Output:", out_pdf)
 
 if __name__ == '__main__':
     main()
