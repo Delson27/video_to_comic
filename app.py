@@ -384,10 +384,18 @@ async def render_html_to_pdf_async(html_path, pdf_path, viewport_width=3000, vie
                     await page.evaluate(f"() => {{ current_page = {page_idx}; placeDialogs(pages[current_page]); }}")
                     await page.wait_for_timeout(500)  # Wait for page to render
                 
-                # Take screenshot of current page
+                # Take screenshot of ONLY the comic wrapper (exclude navigation buttons and background)
                 temp_png = pdf_path.replace('.pdf', f'.temp_page_{page_idx}.png')
                 temp_images.append(temp_png)
-                await page.screenshot(path=temp_png, full_page=True)
+                
+                # Get the wrapper element and screenshot only that area
+                wrapper = await page.query_selector('.wrapper')
+                if wrapper:
+                    await wrapper.screenshot(path=temp_png)
+                else:
+                    # Fallback to full page if wrapper not found
+                    print(f"Warning: .wrapper not found, using full page screenshot")
+                    await page.screenshot(path=temp_png, full_page=True)
             
             await context.close()
             await browser.close()
