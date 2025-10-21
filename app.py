@@ -323,7 +323,7 @@ def frames_static(filename):
 async def render_html_to_pdf_async(html_path, pdf_path, viewport_width=3000, viewport_height=3000, jpeg_quality=85):
     """
     Render HTML to PDF using Playwright (headless Chromium).
-    This handles JavaScript execution and captures the fully-rendered page.
+    This handles JavaScript execution and captures ALL comic pages into a single PDF.
     """
     try:
         from playwright.async_api import async_playwright
@@ -336,11 +336,10 @@ async def render_html_to_pdf_async(html_path, pdf_path, viewport_width=3000, vie
     
     print(f"Rendering HTML to PDF: {html_path} -> {pdf_path}")
     
-    # Create temporary PNG path
-    temp_png = pdf_path.replace('.pdf', '.temp.png')
+    temp_images = []
     
     try:
-        # Step 1: Render HTML to screenshot using Playwright
+        # Step 1: Render ALL pages to screenshots using Playwright
         async with async_playwright() as p:
             browser = await p.chromium.launch()
             context = await browser.new_context(
@@ -372,44 +371,69 @@ async def render_html_to_pdf_async(html_path, pdf_path, viewport_width=3000, vie
                 }
             """)
             
-            # Take full-page screenshot
-            await page.screenshot(path=temp_png, full_page=True)
+            # Get the total number of pages from the JavaScript variable
+            num_pages = await page.evaluate("() => typeof pages !== 'undefined' ? pages.length : 1")
+            print(f"Found {num_pages} comic pages to render")
+            
+            # Render each page
+            for page_idx in range(num_pages):
+                print(f"Rendering page {page_idx + 1}/{num_pages}...")
+                
+                # Navigate to specific page by calling the JavaScript function
+                if page_idx > 0:
+                    await page.evaluate(f"() => {{ current_page = {page_idx}; placeDialogs(pages[current_page]); }}")
+                    await page.wait_for_timeout(500)  # Wait for page to render
+                
+                # Take screenshot of current page
+                temp_png = pdf_path.replace('.pdf', f'.temp_page_{page_idx}.png')
+                temp_images.append(temp_png)
+                await page.screenshot(path=temp_png, full_page=True)
+            
             await context.close()
             await browser.close()
         
-        # Step 2: Convert PNG to PDF
-        img = Image.open(temp_png)
-        if img.mode == 'RGBA':
-            background = Image.new('RGB', img.size, (255, 255, 255))
-            background.paste(img, mask=img.split()[3])
-            img = background
-        elif img.mode != 'RGB':
-            img = img.convert('RGB')
+        # Step 2: Convert all PNGs to JPEGs and combine into single PDF
+        print(f"Combining {len(temp_images)} pages into PDF...")
+        temp_jpgs = []
         
-        # Save as JPEG and convert to PDF
-        temp_jpg = temp_png.replace('.png', '.temp.jpg')
-        img.save(temp_jpg, 'JPEG', quality=jpeg_quality, optimize=False)
+        for i, temp_png in enumerate(temp_images):
+            img = Image.open(temp_png)
+            
+            # Convert RGBA to RGB if needed
+            if img.mode == 'RGBA':
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[3])
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # Save as JPEG
+            temp_jpg = temp_png.replace('.png', '.jpg')
+            temp_jpgs.append(temp_jpg)
+            img.save(temp_jpg, 'JPEG', quality=jpeg_quality, optimize=False)
+            img.close()
         
-        with open(temp_jpg, 'rb') as f:
-            pdf_bytes = img2pdf.convert(f.read())
-        
+        # Convert all JPEGs to a single PDF
         with open(pdf_path, 'wb') as f:
-            f.write(pdf_bytes)
+            f.write(img2pdf.convert([open(jpg, 'rb').read() for jpg in temp_jpgs]))
         
-        # Cleanup
-        for temp_file in [temp_png, temp_jpg]:
+        # Cleanup temp files
+        for temp_file in temp_images + temp_jpgs:
             if os.path.exists(temp_file):
                 os.remove(temp_file)
         
         file_size_mb = os.path.getsize(pdf_path) / 1024 / 1024
-        print(f"PDF generated successfully: {pdf_path} ({file_size_mb:.2f} MB)")
+        print(f"PDF generated successfully: {pdf_path} ({file_size_mb:.2f} MB, {num_pages} pages)")
         return pdf_path
     
     except Exception as e:
         # Cleanup on error
-        for temp_file in [temp_png, temp_png.replace('.png', '.temp.jpg')]:
+        for temp_file in temp_images:
             if os.path.exists(temp_file):
                 os.remove(temp_file)
+            jpg_file = temp_file.replace('.png', '.jpg')
+            if os.path.exists(jpg_file):
+                os.remove(jpg_file)
         raise RuntimeError(f"PDF generation failed: {e}")
 
 def generate_comic_pdf_sync(html_path='output/page.html', pdf_path='output/comic.pdf'):
