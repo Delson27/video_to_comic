@@ -99,25 +99,73 @@ function placeDialogs(page) {
   }
 }
 
+function updateNavigationButtons() {
+  // Get navigation buttons
+  const prevButtons = document.querySelectorAll('button[onclick="prevPage()"]');
+  const nextButtons = document.querySelectorAll('button[onclick="nextPage()"]');
+
+  // Update previous button state
+  prevButtons.forEach((button) => {
+    if (current_page === 0) {
+      // First page - disable previous button
+      button.disabled = true;
+      button.style.opacity = "0.3";
+      button.style.cursor = "not-allowed";
+    } else {
+      // Not first page - enable previous button
+      button.disabled = false;
+      button.style.opacity = "1";
+      button.style.cursor = "pointer";
+    }
+  });
+
+  // Update next button state
+  nextButtons.forEach((button) => {
+    if (current_page === pages.length - 1) {
+      // Last page - disable next button
+      button.disabled = true;
+      button.style.opacity = "0.3";
+      button.style.cursor = "not-allowed";
+    } else {
+      // Not last page - enable next button
+      button.disabled = false;
+      button.style.opacity = "1";
+      button.style.cursor = "pointer";
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   console.log("Total pages:", pages.length);
   console.log("Current page:", current_page + 1);
   placeDialogs(pages[current_page]);
+  updateNavigationButtons(); // Update button states on initial load
 });
 
 function prevPage() {
-  current_page = current_page - 1;
-  if (current_page < 0) {
-    current_page = pages.length - 1;
+  // Prevent navigation if already on first page
+  if (current_page === 0) {
+    console.log("Already on first page");
+    return;
   }
+
+  current_page = current_page - 1;
   console.log("Previous page:", current_page + 1);
   placeDialogs(pages[current_page]);
+  updateNavigationButtons(); // Update button states after navigation
 }
 
 function nextPage() {
-  current_page = (current_page + 1) % pages.length;
+  // Prevent navigation if already on last page
+  if (current_page === pages.length - 1) {
+    console.log("Already on last page");
+    return;
+  }
+
+  current_page = current_page + 1;
   console.log("Next page:", current_page + 1);
   placeDialogs(pages[current_page]);
+  updateNavigationButtons(); // Update button states after navigation
 }
 
 function sendPageDataToBackend(page) {
