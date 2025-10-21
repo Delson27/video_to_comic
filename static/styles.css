@@ -1,8 +1,9 @@
-body, html {
+body,
+html {
   margin: 0;
   padding: 0;
   height: 100%;
-  overflow: hidden;
+  overflow: auto;
 }
 
 #bgVideo {
@@ -98,20 +99,20 @@ body, html {
 }
 
 .button-container {
-  display: flex; 
+  display: flex;
 }
 
 .icon-button {
   border: none;
   background: none;
   padding: 0;
-  margin-right: 10px; 
+  margin-right: 10px;
   border-radius: 0.5rem;
 }
 
 .icon-button img {
-  width: 50px; 
-  height: 50px; 
+  width: 50px;
+  height: 50px;
 }
 
 .submit-button {
@@ -153,7 +154,7 @@ body, html {
   z-index: 2;
 }
 
-#title{
+#title {
   font-family: "Bungee Spice", sans-serif;
   font-weight: 400;
   font-style: normal;
@@ -170,7 +171,7 @@ body, html {
 
 @media (max-width: 768px) {
   .container {
-    flex-direction: column; 
+    flex-direction: column;
   }
 
   .box,
@@ -179,5 +180,3 @@ body, html {
     max-width: 100%;
   }
 }
-
-
