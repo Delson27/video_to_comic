@@ -320,64 +320,123 @@ def output_static(filename):
 def frames_static(filename):
     return send_from_directory('frames', filename)
 
-def generate_pdf_from_frames(frames_dir='frames/final', output_path='output/generated_comic.pdf'):
+async def render_html_to_pdf_async(html_path, pdf_path, viewport_width=3000, viewport_height=3000, jpeg_quality=85):
     """
-    Generate a PDF from images in the specified directory, including dialog bubbles.
-
-    :param frames_dir: Directory containing the frame images.
-    :param output_path: Path to save the generated PDF.
+    Render HTML to PDF using Playwright (headless Chromium).
+    This handles JavaScript execution and captures the fully-rendered page.
     """
-    from backend.speech_bubble.bubble_placement import get_bubble_position
-    from backend.speech_bubble.bubble_shape import get_bubble_type
-    from backend.speech_bubble.bubble import bubble_create
+    try:
+        from playwright.async_api import async_playwright
+        from PIL import Image
+        import img2pdf
+    except ImportError as e:
+        raise RuntimeError(f"Missing dependency: {e}. Install with: pip install playwright pillow img2pdf && playwright install chromium")
+    
+    from pathlib import Path
+    
+    print(f"Rendering HTML to PDF: {html_path} -> {pdf_path}")
+    
+    # Create temporary PNG path
+    temp_png = pdf_path.replace('.pdf', '.temp.png')
+    
+    try:
+        # Step 1: Render HTML to screenshot using Playwright
+        async with async_playwright() as p:
+            browser = await p.chromium.launch()
+            context = await browser.new_context(
+                viewport={"width": viewport_width, "height": viewport_height}
+            )
+            page = await context.new_page()
+            
+            # Convert file path to file:// URL
+            file_url = Path(html_path).resolve().as_uri()
+            print(f"Opening: {file_url}")
+            
+            # Navigate and wait for page to load
+            await page.goto(file_url, wait_until="networkidle")
+            
+            # Wait for images and JavaScript to complete
+            await page.evaluate("""
+                async () => {
+                    const images = Array.from(document.querySelectorAll('img'));
+                    await Promise.all(images.map(img => {
+                        return new Promise(resolve => {
+                            if (img.complete) resolve();
+                            else {
+                                img.onload = resolve;
+                                img.onerror = resolve;
+                            }
+                        });
+                    }));
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            """)
+            
+            # Take full-page screenshot
+            await page.screenshot(path=temp_png, full_page=True)
+            await context.close()
+            await browser.close()
+        
+        # Step 2: Convert PNG to PDF
+        img = Image.open(temp_png)
+        if img.mode == 'RGBA':
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[3])
+            img = background
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Save as JPEG and convert to PDF
+        temp_jpg = temp_png.replace('.png', '.temp.jpg')
+        img.save(temp_jpg, 'JPEG', quality=jpeg_quality, optimize=False)
+        
+        with open(temp_jpg, 'rb') as f:
+            pdf_bytes = img2pdf.convert(f.read())
+        
+        with open(pdf_path, 'wb') as f:
+            f.write(pdf_bytes)
+        
+        # Cleanup
+        for temp_file in [temp_png, temp_jpg]:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+        
+        file_size_mb = os.path.getsize(pdf_path) / 1024 / 1024
+        print(f"PDF generated successfully: {pdf_path} ({file_size_mb:.2f} MB)")
+        return pdf_path
+    
+    except Exception as e:
+        # Cleanup on error
+        for temp_file in [temp_png, temp_png.replace('.png', '.temp.jpg')]:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+        raise RuntimeError(f"PDF generation failed: {e}")
 
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-
-    # Get all PNG files in the directory, sorted alphabetically
-    frame_files = sorted([f for f in os.listdir(frames_dir) if f.endswith('.png')])
-
-    # Example crop_coords and CAM_data (replace with actual data loading logic)
-    crop_coords = [(0, 100, 0, 100)] * len(frame_files)  # Placeholder crop coordinates
-    CAM_data = [{"x_": 1, "y_": 1, "ten_map": [[0] * 100 for _ in range(100)]}] * len(frame_files)
-
-    # Generate bubbles dynamically
-    bubbles = bubble_create("video/uploaded.mp4", crop_coords, 0, 0)
-
-    for i, frame_file in enumerate(frame_files):
-        if i % 6 == 0:
-            pdf.add_page()
-
-        frame_path = os.path.join(frames_dir, frame_file)
-        x = 15 + (i % 2) * 100  # Adjust x position for 2 frames per row
-        y = 20 + ((i // 2) % 3) * 140  # Adjust y position for 3 rows per page
-        pdf.image(frame_path, x=x, y=y, w=90, h=120)  # Larger size for better visibility
-
-        # Add dialog bubble
-        if i < len(bubbles):
-            bubble = bubbles[i]
-            pdf.set_xy(x + bubble.bubble_x, y + bubble.bubble_y)
-            pdf.set_fill_color(255, 255, 255)  # White background
-            pdf.set_text_color(0, 0, 0)  # Black text
-            pdf.set_font("Arial", size=12)
-            pdf.multi_cell(50, 10, bubble.dialog, border=1, fill=True)
-
-            # Add tail (simplified as a line for now)
-            if bubble.lip_x != -1 and bubble.lip_y != -1:
-                tail_x = x + bubble.bubble_x + (bubble.lip_x - bubble.bubble_x) / 2
-                tail_y = y + bubble.bubble_y + (bubble.lip_y - bubble.bubble_y) / 2
-                pdf.line(x + bubble.bubble_x, y + bubble.bubble_y, tail_x, tail_y)
-
-    pdf.output(output_path)
-    print(f"PDF generated successfully at: {output_path}")
-    return output_path
+def generate_comic_pdf_sync(html_path='output/page.html', pdf_path='output/comic.pdf'):
+    """Synchronous wrapper for async PDF generation."""
+    import asyncio
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        result = loop.run_until_complete(render_html_to_pdf_async(html_path, pdf_path))
+        return result
+    finally:
+        loop.close()
 
 @app.route('/generate-pdf', methods=['GET'])
 def generate_pdf_endpoint():
     try:
-        output_path = generate_pdf_from_frames()
+        html_path = os.path.join('output', 'page.html')
+        pdf_path = os.path.join('output', 'comic.pdf')
+        
+        if not os.path.exists(html_path):
+            return jsonify({"error": "Comic HTML not found. Please generate the comic first."}), 404
+        
+        output_path = generate_comic_pdf_sync(html_path, pdf_path)
         return jsonify({"message": "PDF generated successfully", "path": output_path})
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
