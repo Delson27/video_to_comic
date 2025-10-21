@@ -116,7 +116,7 @@
             Preview Comic
           </button>
           <button
-            onclick="fetch('/generate-pdf', { method: 'GET' }).then(response => response.json()).then(data => alert(data.message || data.error))"
+            onclick="downloadPDF()"
             class="submit-button"
             id="downloadButton"
           >
@@ -125,6 +125,34 @@
         </div>
       </div>
     </div>
+    <script>
+      function downloadPDF() {
+        fetch("/generate-pdf", { method: "GET" })
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((data) => {
+                throw new Error(data.error || "Failed to generate PDF");
+              });
+            }
+            return response.blob();
+          })
+          .then((blob) => {
+            // Create a download link and trigger it
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "comic_strip.pdf";
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            alert("PDF downloaded successfully!");
+          })
+          .catch((error) => {
+            alert("Error: " + error.message);
+          });
+      }
+    </script>
     <script src="{{url_for('static', filename='script.js')}}"></script>
     <script src="{{url_for('static', filename='bootstrap.bundle.min.js')}}"></script>
   </body>

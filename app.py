@@ -465,7 +465,14 @@ def generate_pdf_endpoint():
             return jsonify({"error": "Comic HTML not found. Please generate the comic first."}), 404
         
         output_path = generate_comic_pdf_sync(html_path, pdf_path)
-        return jsonify({"message": "PDF generated successfully", "path": output_path})
+        
+        # Send the PDF file for download
+        return send_file(
+            output_path,
+            as_attachment=True,
+            download_name='comic_strip.pdf',
+            mimetype='application/pdf'
+        )
     except Exception as e:
         import traceback
         traceback.print_exc()
