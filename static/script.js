@@ -161,6 +161,7 @@ function submitForm() {
         source.onerror = function (err) {
           console.error("EventSource failed:", err);
           progressText.textContent = "Connection to server lost.";
+          progressBar.style.backgroundColor = "#ef4444";
           submitBtn.textContent = "Try Again";
           submitBtn.disabled = false;
           source.close();
@@ -171,7 +172,11 @@ function submitForm() {
     })
     .catch((error) => {
       console.error("Error starting job:", error);
-      progressText.textContent = "Could not start the job.";
+      progressContainer.style.display = "block";
+      progressBar.style.width = "100%";
+      progressBar.style.backgroundColor = "#ef4444";
+      progressText.textContent = error.message || "Could not start the job. Please check your link and try again.";
+      progressTextOverlay.textContent = "Error";
       submitBtn.textContent = "Try Again";
       submitBtn.disabled = false;
     });

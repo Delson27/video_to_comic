@@ -30,63 +30,175 @@ var pages = [
                 "image": "frame006",
                 "row_span": 1,
                 "col_span": 1
+            },
+            {
+                "image": "frame007",
+                "row_span": 1,
+                "col_span": 1
+            },
+            {
+                "image": "frame008",
+                "row_span": 1,
+                "col_span": 1
             }
         ],
         "bubbles": [
             {
-                "dialog": "So, what's new, Mark?",
-                "emotion": "jagged",
+                "dialog": "I've hundred times longer than you.",
+                "emotion": "normal",
+                "bubble_offset_x": 43.75,
+                "bubble_offset_y": 206.83760683760687,
+                "bubble_x": 43.75,
+                "bubble_y": 206.83760683760687,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            },
+            {
+                "dialog": "I don't really need people, but people need me.",
+                "emotion": "normal",
+                "bubble_offset_x": 10.0,
+                "bubble_offset_y": 206.83760683760687,
+                "bubble_x": 10.0,
+                "bubble_y": 206.83760683760687,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            },
+            {
+                "dialog": "Yes, your future depends on me.",
+                "emotion": "normal",
                 "bubble_offset_x": 10.0,
                 "bubble_offset_y": 15.0,
                 "bubble_x": 10.0,
                 "bubble_y": 15.0,
-                "lip_x": 88.38842975206612,
-                "lip_y": 126.26262626262627,
-                "tail_deg": 54.83395897996983,
-                "tail_offset_x": 46.0758317143508,
-                "tail_offset_y": 65.39891231382083
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
             },
             {
-                "dialog": "How is your new job going?",
+                "dialog": "When I thrive, you thrive.",
+                "emotion": "normal",
+                "bubble_offset_x": 10.0,
+                "bubble_offset_y": 15.0,
+                "bubble_x": 10.0,
+                "bubble_y": 15.0,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            },
+            {
+                "dialog": "When I falter, you falter.",
+                "emotion": "normal",
+                "bubble_offset_x": 43.75,
+                "bubble_offset_y": 206.83760683760687,
+                "bubble_x": 43.75,
+                "bubble_y": 206.83760683760687,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            },
+            {
+                "dialog": "Or worse.",
                 "emotion": "jagged",
                 "bubble_offset_x": 43.75,
-                "bubble_offset_y": 15.0,
+                "bubble_offset_y": 206.83760683760687,
                 "bubble_x": 43.75,
-                "bubble_y": 15.0,
-                "lip_x": 62.442148760330575,
-                "lip_y": 147.87878787878788,
-                "tail_deg": 81.99270493251657,
-                "tail_offset_x": 11.143934694417887,
-                "tail_offset_y": 79.22002726284907
+                "bubble_y": 206.83760683760687,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
             },
             {
-                "dialog": "To be honest, I can't complain.",
+                "dialog": "But I've been here for eons.",
+                "emotion": "normal",
+                "bubble_offset_x": 43.75,
+                "bubble_offset_y": 206.83760683760687,
+                "bubble_x": 43.75,
+                "bubble_y": 206.83760683760687,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            },
+            {
+                "dialog": "I have fed species greater than you, and I have starved species greater than you.",
                 "emotion": "normal",
                 "bubble_offset_x": 10.0,
                 "bubble_offset_y": 15.0,
                 "bubble_x": 10.0,
                 "bubble_y": 15.0,
-                "lip_x": 82.68595041322314,
-                "lip_y": 124.24242424242425,
-                "tail_deg": 56.361644957864954,
-                "tail_offset_x": 44.315920065479645,
-                "tail_offset_y": 66.60404814086017
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            }
+        ]
+    },
+    {
+        "panels": [
+            {
+                "image": "frame009",
+                "row_span": 1,
+                "col_span": 1
             },
             {
-                "dialog": "I really love the company that I am working for.",
+                "image": "frame010",
+                "row_span": 1,
+                "col_span": 1
+            },
+            {
+                "image": "frame011",
+                "row_span": 1,
+                "col_span": 1
+            },
+            {
+                "image": "frame012",
+                "row_span": 1,
+                "col_span": 1
+            },
+            {
+                "image": "frame013",
+                "row_span": 1,
+                "col_span": 1
+            },
+            {
+                "image": "frame014",
+                "row_span": 1,
+                "col_span": 1
+            },
+            {
+                "image": "frame015",
+                "row_span": 1,
+                "col_span": 1
+            },
+            {
+                "image": "frame016",
+                "row_span": 1,
+                "col_span": 1
+            }
+        ],
+        "bubbles": [
+            {
+                "dialog": "My oceans, my soil, my flowing streams, my forests, they all can take you.",
                 "emotion": "normal",
                 "bubble_offset_x": 10.0,
-                "bubble_offset_y": 184.84848484848484,
+                "bubble_offset_y": 15.0,
                 "bubble_x": 10.0,
-                "bubble_y": 184.84848484848484,
-                "lip_x": 83.04235537190083,
-                "lip_y": 124.24242424242425,
-                "tail_deg": -39.68380353789191,
-                "tail_offset_x": 61.56640737651769,
-                "tail_offset_y": -51.08402375252627
+                "bubble_y": 15.0,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
             },
             {
-                "dialog": "My co-workers are all really friendly and helpful.",
+                "dialog": "Or leave you.",
                 "emotion": "normal",
                 "bubble_offset_x": 43.75,
                 "bubble_offset_y": 15.0,
@@ -98,11 +210,128 @@ var pages = [
                 "tail_offset_y": null
             },
             {
-                "dialog": "They really help me feel welcome.",
+                "dialog": "How you choose to live each day, whether you regard or disregard me, doesn't really matter to me.",
+                "emotion": "normal",
+                "bubble_offset_x": 10.0,
+                "bubble_offset_y": 15.0,
+                "bubble_x": 10.0,
+                "bubble_y": 15.0,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            },
+            {
+                "dialog": "One way or the other.",
+                "emotion": "normal",
+                "bubble_offset_x": 51.75,
+                "bubble_offset_y": 15.0,
+                "bubble_x": 51.75,
+                "bubble_y": 15.0,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            },
+            {
+                "dialog": "Your actions will determine your fate.",
+                "emotion": "normal",
+                "bubble_offset_x": 10.0,
+                "bubble_offset_y": 68.94586894586895,
+                "bubble_x": 10.0,
+                "bubble_y": 68.94586894586895,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            },
+            {
+                "dialog": "Not mine.",
                 "emotion": "normal",
                 "bubble_offset_x": 43.75,
                 "bubble_offset_y": 15.0,
                 "bubble_x": 43.75,
+                "bubble_y": 15.0,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            },
+            {
+                "dialog": "I am nature.",
+                "emotion": "normal",
+                "bubble_offset_x": 10.0,
+                "bubble_offset_y": 15.0,
+                "bubble_x": 10.0,
+                "bubble_y": 15.0,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            },
+            {
+                "dialog": "I will go on.",
+                "emotion": "normal",
+                "bubble_offset_x": 10.0,
+                "bubble_offset_y": 15.0,
+                "bubble_x": 10.0,
+                "bubble_y": 15.0,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            }
+        ]
+    },
+    {
+        "panels": [
+            {
+                "image": "frame017",
+                "row_span": 2,
+                "col_span": 2
+            },
+            {
+                "image": "frame018",
+                "row_span": 2,
+                "col_span": 2
+            },
+            {
+                "image": "frame019",
+                "row_span": 2,
+                "col_span": 2
+            }
+        ],
+        "bubbles": [
+            {
+                "dialog": "I am prepared to evolve.",
+                "emotion": "normal",
+                "bubble_offset_x": 10.0,
+                "bubble_offset_y": 15.0,
+                "bubble_x": 10.0,
+                "bubble_y": 15.0,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            },
+            {
+                "dialog": "Are you?",
+                "emotion": "jagged",
+                "bubble_offset_x": 10.0,
+                "bubble_offset_y": 15.0,
+                "bubble_x": 10.0,
+                "bubble_y": 15.0,
+                "lip_x": -1,
+                "lip_y": -1,
+                "tail_offset_x": null,
+                "tail_offset_y": null
+            },
+            {
+                "dialog": "I am nature.",
+                "emotion": "normal",
+                "bubble_offset_x": 10.0,
+                "bubble_offset_y": 15.0,
+                "bubble_x": 10.0,
                 "bubble_y": 15.0,
                 "lip_x": -1,
                 "lip_y": -1,

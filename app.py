@@ -106,22 +106,29 @@ def start_job():
     video_path = ""
     job_statuses[job_id] = {'progress': 5, 'message': 'Initializing...'}
 
-    if 'file' in request.files and request.files['file'].filename != '':
-        video_file = request.files['file']
-        video_path = os.path.join('video', 'uploaded.mp4')
-        os.makedirs('video', exist_ok=True)
-        video_file.save(video_path)
-    elif 'link' in request.form and request.form['link'] != '':
-        link = request.form['link']
-        download_video(link)
-        video_path = os.path.join('video', 'uploaded.mp4')
-    else:
-        return jsonify({'error': 'No file or link provided'}), 400
+    try:
+        if 'file' in request.files and request.files['file'].filename != '':
+            video_file = request.files['file']
+            video_path = os.path.join('video', 'uploaded.mp4')
+            os.makedirs('video', exist_ok=True)
+            video_file.save(video_path)
+        elif 'link' in request.form and request.form['link'] != '':
+            link = request.form['link']
+            job_statuses[job_id]['message'] = 'Downloading video from link...'
+            download_video(link)
+            video_path = os.path.join('video', 'uploaded.mp4')
+        else:
+            return jsonify({'error': 'No file or link provided'}), 400
 
-    thread = threading.Thread(target=run_comic_generation, args=(video_path, job_id))
-    thread.start()
+        thread = threading.Thread(target=run_comic_generation, args=(video_path, job_id))
+        thread.start()
+        
+        return jsonify({'job_id': job_id})
     
-    return jsonify({'job_id': job_id})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Failed to start job: {str(e)}'}), 500
 
 @app.route('/progress/<job_id>')
 def progress(job_id):
