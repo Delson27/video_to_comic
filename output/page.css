@@ -1,0 +1,136 @@
+@font-face {
+    font-family: 'adam_warren_proregular';
+    src: url('assets/adam-warren-font/adamwarrenpro-webfont.woff2') format('woff2'),
+    url('assets/adam-warren-font/adamwarrenpro-webfont.woff') format('woff');
+     font-weight: normal; 
+     font-style: normal;
+    }
+    
+    body {
+     display: flex;
+     flex-direction: row;
+     align-items: center;
+     justify-content: center;
+     background-image: url('assets/bg.jpg');
+     background-repeat: no-repeat;
+     background-attachment: fixed;
+     background-size: cover;
+     margin: 0;
+     padding: 0;
+     min-height: 100vh;
+     overflow-y :auto;
+     overflow-x: hidden;
+     box-sizing: border-box;
+    }
+    
+    .button{
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     flex-shrink: 0;
+    }
+    
+    .button button{
+     background-color: rgba(0, 0, 0, 0.42);
+     border: none;
+     border-radius: 50%;
+     padding: 15px;
+     cursor: pointer;
+     transition: all 0.3s ease;
+     width: 60px;
+     height: 60px;
+     display: flex;
+     justify-content: center;
+     align-items: center;
+    }
+    
+    .button button:hover {
+     box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff, 0 0 2px #000000,
+     0 0 4px #000000, 0 0 6px #000000, 0 0 6px #000000;
+     transform: scale(1.1);
+    }
+    
+    .button button img {
+     width: 30px;
+     height: 30px;
+    }
+    
+    .wrapper {
+     display: flex;
+     width: 100%;
+     max-width:90vw;
+     
+     background-color: rgb(255, 255, 255);
+     flex-grow: 1;
+     flex-shrink: 1;
+     /*Added new line*/
+     height:fit-content;
+     
+    }
+    
+    .grid-container {
+     width: 100%;
+     display: grid;
+     grid-template-columns: repeat(4, 1fr);
+   
+     border: 3px solid rgb(255, 255, 255);
+     row-gap: 3px;
+     column-gap: 3px;
+    }
+    
+    .grid-item {
+     background-position: center center;
+     background-repeat: no-repeat;
+     background-size: contain;
+     border: 3px solid black;
+     position: relative;
+    }
+    
+    /* ✅ Normal pages - 8 panels, all squares */
+    .grid-container.squares .grid-item {
+     aspect-ratio: 1 / 1; /* keeps panel a perfect square */
+     height: auto; /* allows square ratio to control size */
+    }
+    
+    /* ✅ Last page layouts - smart arrangements for leftover panels */
+    .grid-container.last-page-1 .grid-item {
+     /* Single panel - large and centered */
+     aspect-ratio: 1 / 1;
+     height: auto;
+    }
+    
+    .grid-container.last-page-2 .grid-item {
+     /* Two panels - medium sized */
+     aspect-ratio: 1 / 1;
+     height: auto;
+    }
+    
+    .grid-container.last-page-3 .grid-item {
+     /* Three panels - medium sized */
+     aspect-ratio: 1 / 1;
+     height: auto;
+    }
+    
+    .grid-container.last-page-4 .grid-item {
+     /* Four panels - 2x2 grid */
+     aspect-ratio: 1 / 1;
+     height: auto;
+    }
+    
+    .grid-container.last-page-5 .grid-item {
+     /* Five panels - normal size */
+     aspect-ratio: 1 / 1;
+     height: auto;
+    }
+    
+    .grid-container.last-page-6 .grid-item {
+     /* Six panels - 2x3 grid */
+     aspect-ratio: 1 / 1;
+     height: auto;
+    }
+    
+    .grid-container.last-page-7 .grid-item {
+     /* Seven panels - normal size */
+    aspect-ratio: 1 / 1;
+     height: auto;
+    }
