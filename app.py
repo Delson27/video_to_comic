@@ -33,7 +33,6 @@ from flask import Flask, render_template,request,send_file,send_from_directory,j
 from backend.subtitles.subs import get_subtitles
 from backend.keyframes.keyframes import generate_keyframes, black_bar_crop
 from backend.panel_layout.layout_gen import generate_layout
-from backend.cartoonize.cartoonize import style_frames
 from backend.speech_bubble.bubble import bubble_create
 from backend.page_create import page_create,page_json
 from backend.utils import cleanup, download_video
@@ -71,29 +70,24 @@ def run_comic_generation(video_path, job_id):
         job_statuses[job_id]['message'] = 'Cropping black bars from frames...'
         black_x, black_y, _, _ = black_bar_crop()
 
-        # Step 4: Apply Cartoon Style
-        job_statuses[job_id]['progress'] = 65
-        job_statuses[job_id]['message'] = 'Applying cartoon style to frames...'
-        style_frames()
-
-        # Step 5: Generate Layout
-        job_statuses[job_id]['progress'] = 80
+        # Step 4: Generate Layout
+        job_statuses[job_id]['progress'] = 70
         job_statuses[job_id]['message'] = 'Designing comic panel layout...'
         crop_coords, page_templates, panels = generate_layout()
 
-        # Step 6: Create Speech Bubbles
-        job_statuses[job_id]['progress'] = 90
+        # Step 5: Create Speech Bubbles
+        job_statuses[job_id]['progress'] = 85
         job_statuses[job_id]['message'] = 'Creating and placing speech bubbles...'
         bubbles = bubble_create(video_path, crop_coords, black_x, black_y)
 
-        # Step 7: Assemble Final Comic
+        # Step 6: Assemble Final Comic
         job_statuses[job_id]['progress'] = 95
         job_statuses[job_id]['message'] = 'Assembling the final comic...'
         pages = page_create(page_templates,panels,bubbles)
         page_json(pages)
         copy_template()
 
-        # Step 8: Done!
+        # Done!
         job_statuses[job_id]['progress'] = 100
         job_statuses[job_id]['message'] = 'Success! Your comic is ready.'
         job_statuses[job_id]['result_url'] = '/output/page.html'
