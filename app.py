@@ -106,29 +106,31 @@ def start_job():
     video_path = ""
     job_statuses[job_id] = {'progress': 5, 'message': 'Initializing...'}
 
-    try:
-        if 'file' in request.files and request.files['file'].filename != '':
-            video_file = request.files['file']
-            video_path = os.path.join('video', 'uploaded.mp4')
-            os.makedirs('video', exist_ok=True)
-            video_file.save(video_path)
-        elif 'link' in request.form and request.form['link'] != '':
-            link = request.form['link']
-            job_statuses[job_id]['message'] = 'Downloading video from link...'
+    if 'file' in request.files and request.files['file'].filename != '':
+        video_file = request.files['file']
+        video_path = os.path.join('video', 'uploaded.mp4')
+        os.makedirs('video', exist_ok=True)
+        video_file.save(video_path)
+    elif 'link' in request.form and request.form['link'] != '':
+        link = request.form['link']
+        try:
             download_video(link)
             video_path = os.path.join('video', 'uploaded.mp4')
-        else:
-            return jsonify({'error': 'No file or link provided'}), 400
+        except Exception as e:
+            error_msg = str(e)
+            if 'player response' in error_msg.lower():
+                return jsonify({'error': 'YouTube download failed. Try: 1) Using a different video 2) Uploading the video file directly instead'}), 400
+            elif 'private' in error_msg.lower() or 'unavailable' in error_msg.lower():
+                return jsonify({'error': 'Video is private or unavailable. Please use a public video.'}), 400
+            else:
+                return jsonify({'error': f'Download failed: {error_msg}'}), 400
+    else:
+        return jsonify({'error': 'No file or link provided'}), 400
 
-        thread = threading.Thread(target=run_comic_generation, args=(video_path, job_id))
-        thread.start()
-        
-        return jsonify({'job_id': job_id})
+    thread = threading.Thread(target=run_comic_generation, args=(video_path, job_id))
+    thread.start()
     
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': f'Failed to start job: {str(e)}'}), 500
+    return jsonify({'job_id': job_id})
 
 @app.route('/progress/<job_id>')
 def progress(job_id):
