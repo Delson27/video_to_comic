@@ -78,10 +78,12 @@ class bubble:
 
     def __init__(self,bubble_offset_x,bubble_offset_y,lip_x,lip_y,dialog,emotion):
 
-        bubble_width=200
-        bubble_height=94
-        tail_centre_x=100
-        tail_centre_y=47
+        # Store dimensions as instance attributes
+        self.bubble_width = 200
+        self.bubble_height = 94
+        tail_centre_x = 100
+        tail_centre_y = 47
+        
         self.dialog = dialog
         self.emotion = emotion
 
