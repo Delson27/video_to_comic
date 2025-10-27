@@ -76,17 +76,12 @@ class panel:
 
 class bubble:
 
-    def __init__(self,bubble_offset_x,bubble_offset_y,lip_x,lip_y,dialog,emotion,bubble_width=None,bubble_height=None):
+    def __init__(self,bubble_offset_x,bubble_offset_y,lip_x,lip_y,dialog,emotion):
 
-        # Use dynamic sizes if provided, otherwise use defaults
-        if bubble_width is None or bubble_height is None:
-            # Calculate dynamic size based on text length
-            bubble_width, bubble_height = self._calculate_bubble_size(dialog)
-        
-        self.bubble_width = bubble_width
-        self.bubble_height = bubble_height
-        tail_centre_x = bubble_width / 2
-        tail_centre_y = bubble_height / 2
+        bubble_width=200
+        bubble_height=94
+        tail_centre_x=100
+        tail_centre_y=47
         self.dialog = dialog
         self.emotion = emotion
 
@@ -101,75 +96,25 @@ class bubble:
         angle = 0
          
         print(f"lipx = {lip_x} and lipy = {lip_y}")
-        # If lip wasn't detected
+        # If lip wasn't detected, default to pointing downward (most natural for speech)
 
         if(lip_x==-1 and lip_y == -1):
-            angle = 0
-            self.tail_offset_x = None
-            self.tail_offset_y = None
+            # Default: tail points down (90 degrees)
+            angle = np.radians(90)  # Point downward by default
+            self.tail_deg = 90
+            self.tail_offset_x = 80 * np.cos(angle)  # x = 0 (straight down)
+            self.tail_offset_y = 80 * np.sin(angle)  # y = 80 (downward)
+            print("No lip detected - using default downward tail")
         else:
+            # Lip detected - point tail toward the detected lip position
             dx = lip_x - bubble_offset_x
             dy = lip_y - bubble_offset_y
             angle = np.arctan2(dy, dx)
-            print(angle)
+            print(f"Calculated tail angle: {np.degrees(angle)} degrees")
 
-            tail_offset_x = None
-            tail_offset_y = None
-
-            self.tail_deg=np.degrees(angle)
-
+            self.tail_deg = np.degrees(angle)
             self.tail_offset_x = 80 * np.cos(angle)
             self.tail_offset_y = 80 * np.sin(angle)
-
-    def _calculate_bubble_size(self, text):
-        """
-        Calculate optimal bubble size based on text length.
-        Returns (width, height) tuple.
-        """
-        if not text or text.strip() == "":
-            return 120, 60  # Minimum size for empty text
-        
-        # Remove action scene markers
-        if text == "((action-scene))":
-            return 120, 60
-        
-        # Character count
-        char_count = len(text)
-        
-        # Base sizes (minimum)
-        MIN_WIDTH = 100
-        MIN_HEIGHT = 50
-        MAX_WIDTH = 220  # Slightly larger than old fixed 200px
-        MAX_HEIGHT = 110  # Slightly larger than old fixed 94px
-        
-        # Estimate required dimensions
-        # Average character width at 10px font ≈ 6px
-        # Assume max ~25 characters per line for readability
-        chars_per_line = 25
-        estimated_lines = max(1, char_count // chars_per_line)
-        
-        # Calculate width (based on text, but capped)
-        if char_count <= chars_per_line:
-            # Short text: width proportional to length
-            width = max(MIN_WIDTH, min(char_count * 7 + 20, MAX_WIDTH))
-        else:
-            # Long text: use max width
-            width = MAX_WIDTH
-        
-        # Calculate height (based on estimated lines)
-        line_height = 14  # pixels per line (font-size 10px + spacing)
-        padding = 20  # Top and bottom padding
-        height = max(MIN_HEIGHT, min(estimated_lines * line_height + padding, MAX_HEIGHT))
-        
-        # Ensure oval shape (width should be > height for speech bubbles)
-        if height > width * 0.8:
-            height = int(width * 0.6)  # Maintain oval ratio
-        
-        # Round to nearest 5 for cleaner values
-        width = round(width / 5) * 5
-        height = round(height / 5) * 5
-        
-        return width, height
 
 
 class Page:
