@@ -8,8 +8,11 @@
 }
 
 .bubble {
-  width: 200px;
-  height: 94px;
+  /* Dynamic size - set by JavaScript based on text length */
+  min-width: 100px;
+  min-height: 50px;
+  max-width: 220px;
+  max-height: 110px;
   background-color: white;
   border: 2px solid black;
   border-radius: 50%;
@@ -24,6 +27,7 @@
   box-sizing: border-box;
   padding: 8px;
   word-wrap: break-word;
+  overflow: hidden; /* Prevent text overflow */
 }
 
 .tail {
