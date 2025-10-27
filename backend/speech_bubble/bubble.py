@@ -52,7 +52,13 @@ def bubble_create(video, crop_coords, black_x, black_y):
         # You'll need to pass this information through the pipeline
         is_normal_page = True  # This needs to be determined based on your logic
         
-        bubble_x, bubble_y = get_bubble_position(crop_coords[idx_crop], CAM_data[idx_cam], is_normal_page)
+        # Pass frame_index to enable face detection
+        bubble_x, bubble_y = get_bubble_position(
+            crop_coords[idx_crop], 
+            CAM_data[idx_cam], 
+            is_normal_page,
+            frame_index=sub.index  # Pass the frame number for face detection
+        )
 
         dialogue = sub.content
         emotion = get_bubble_type(dialogue)
