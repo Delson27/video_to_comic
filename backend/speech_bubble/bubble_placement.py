@@ -4,8 +4,9 @@ import dlib
 import numpy as np
 import os
 
-BUBBLE_WIDTH = 200
-BUUBLE_HEIGHT = 94
+# Default bubble sizes (kept for backward compatibility)
+DEFAULT_BUBBLE_WIDTH = 200
+DEFAULT_BUBBLE_HEIGHT = 94
 
 # Initialize face detector (same as in lip_detection.py)
 face_detector = dlib.get_frontal_face_detector()
@@ -61,7 +62,7 @@ def detect_faces_in_panel(frame_path, crop_coord):
         return []
 
 
-def is_overlapping_face(bubble_x, bubble_y, faces, panel_type):
+def is_overlapping_face(bubble_x, bubble_y, faces, panel_type, bubble_width, bubble_height):
     """
     Check if a bubble position overlaps with any detected face.
     Returns True if overlapping, False if safe.
@@ -74,8 +75,8 @@ def is_overlapping_face(bubble_x, bubble_y, faces, panel_type):
     panel_height = types[panel_type]['height']
     
     # Calculate bubble bounding box (in panel coordinates)
-    bubble_right = bubble_x + BUBBLE_WIDTH
-    bubble_bottom = bubble_y + BUUBLE_HEIGHT
+    bubble_right = bubble_x + bubble_width
+    bubble_bottom = bubble_y + bubble_height
     
     # Check overlap with each face
     for face in faces:
@@ -96,7 +97,7 @@ def is_overlapping_face(bubble_x, bubble_y, faces, panel_type):
     return False
 
 
-def find_best_position_avoiding_faces(crop_coord, CAM_data, faces, panel_type):
+def find_best_position_avoiding_faces(crop_coord, CAM_data, faces, panel_type, bubble_width, bubble_height):
     """
     Find the best bubble position that:
     1. Avoids all detected faces
@@ -131,19 +132,19 @@ def find_best_position_avoiding_faces(crop_coord, CAM_data, faces, panel_type):
                 # Ensure position is within panel bounds
                 if panel_x < 0:
                     panel_x = 0
-                elif panel_x > panel_width - BUBBLE_WIDTH:
-                    panel_x = panel_width - BUBBLE_WIDTH
+                elif panel_x > panel_width - bubble_width:
+                    panel_x = panel_width - bubble_width
                     
                 if panel_y < 0:
                     panel_y = 0
-                elif panel_y > panel_height - BUUBLE_HEIGHT:
-                    panel_y = panel_height - BUUBLE_HEIGHT
+                elif panel_y > panel_height - bubble_height:
+                    panel_y = panel_height - bubble_height
                 
                 # Convert to CSS pixels for overlap check
                 css_x, css_y = convert_to_css_pixel(panel_x, panel_y, crop_coord, False)
                 
                 # Check if this position overlaps with faces
-                if not is_overlapping_face(css_x, css_y, faces, panel_type):
+                if not is_overlapping_face(css_x, css_y, faces, panel_type, bubble_width, bubble_height):
                     candidates.append({
                         'x': panel_x,
                         'y': panel_y,
@@ -162,14 +163,14 @@ def find_best_position_avoiding_faces(crop_coord, CAM_data, faces, panel_type):
     print("Warning: No safe CAM position found, trying corner fallbacks")
     corner_positions = [
         (10, 10, 'top-left'),
-        (panel_width - BUBBLE_WIDTH - 10, 10, 'top-right'),
-        (10, panel_height - BUUBLE_HEIGHT - 10, 'bottom-left'),
-        (panel_width - BUBBLE_WIDTH - 10, panel_height - BUUBLE_HEIGHT - 10, 'bottom-right'),
+        (panel_width - bubble_width - 10, 10, 'top-right'),
+        (10, panel_height - bubble_height - 10, 'bottom-left'),
+        (panel_width - bubble_width - 10, panel_height - bubble_height - 10, 'bottom-right'),
     ]
     
     for x, y, corner_name in corner_positions:
         css_x, css_y = convert_to_css_pixel(x, y, crop_coord, False)
-        if not is_overlapping_face(css_x, css_y, faces, panel_type):
+        if not is_overlapping_face(css_x, css_y, faces, panel_type, bubble_width, bubble_height):
             print(f"Using {corner_name} corner as fallback")
             return css_x, css_y
     
@@ -179,7 +180,7 @@ def find_best_position_avoiding_faces(crop_coord, CAM_data, faces, panel_type):
     return css_x, css_y
 
 
-def add_bubble_padding(least_roi_x, least_roi_y, crop_coord):
+def add_bubble_padding(least_roi_x, least_roi_y, crop_coord, bubble_width, bubble_height):
     left,right,top,bottom = crop_coord
     panel = get_panel_type(left, right, top, bottom)
     
@@ -195,10 +196,10 @@ def add_bubble_padding(least_roi_x, least_roi_y, crop_coord):
             least_roi_x += 20
 
     elif least_roi_x == image_width:
-        least_roi_x -= BUBBLE_WIDTH + 15
+        least_roi_x -= bubble_width + 15
 
-    elif least_roi_x >= image_width - BUBBLE_WIDTH:
-        least_roi_x -= BUBBLE_WIDTH - (image_width - least_roi_x) + 15
+    elif least_roi_x >= image_width - bubble_width:
+        least_roi_x -= bubble_width - (image_width - least_roi_x) + 15
 
     if least_roi_y == 0:
         if panel == '2':
@@ -207,15 +208,15 @@ def add_bubble_padding(least_roi_x, least_roi_y, crop_coord):
             least_roi_y += 15
 
     elif least_roi_y == image_height:
-        least_roi_y -= BUUBLE_HEIGHT + 15
+        least_roi_y -= bubble_height + 15
 
-    elif least_roi_y >= image_height - BUUBLE_HEIGHT:
-        least_roi_y -= BUUBLE_HEIGHT - (image_height - least_roi_y) + 15
+    elif least_roi_y >= image_height - bubble_height:
+        least_roi_y -= bubble_height - (image_height - least_roi_y) + 15
     
     return least_roi_x, least_roi_y
 
 
-def get_bubble_position(crop_coord, CAM_data, is_normal_page=False, frame_index=None):
+def get_bubble_position(crop_coord, CAM_data, is_normal_page=False, frame_index=None, bubble_width=None, bubble_height=None):
     """
     Get optimal bubble position that avoids faces and prefers low-importance regions.
     
@@ -224,7 +225,15 @@ def get_bubble_position(crop_coord, CAM_data, is_normal_page=False, frame_index=
         CAM_data: Dictionary with CAM heatmap data
         is_normal_page: Boolean indicating if this is a normal page
         frame_index: Frame number (1-indexed) to load the corresponding image
+        bubble_width: Dynamic bubble width (defaults to DEFAULT_BUBBLE_WIDTH)
+        bubble_height: Dynamic bubble height (defaults to DEFAULT_BUBBLE_HEIGHT)
     """
+    # Use default sizes if not provided
+    if bubble_width is None:
+        bubble_width = DEFAULT_BUBBLE_WIDTH
+    if bubble_height is None:
+        bubble_height = DEFAULT_BUBBLE_HEIGHT
+    
     left, right, top, bottom = crop_coord
     
     # Determine panel type
@@ -244,8 +253,8 @@ def get_bubble_position(crop_coord, CAM_data, is_normal_page=False, frame_index=
     
     # Find best position avoiding faces
     if faces:
-        print(f"Using face-aware placement for frame {frame_index}")
-        bubble_x, bubble_y = find_best_position_avoiding_faces(crop_coord, CAM_data, faces, panel_type)
+        print(f"Using face-aware placement for frame {frame_index} (bubble: {bubble_width}x{bubble_height})")
+        bubble_x, bubble_y = find_best_position_avoiding_faces(crop_coord, CAM_data, faces, panel_type, bubble_width, bubble_height)
     else:
         print(f"No faces detected or frame not provided, using standard CAM placement")
         # Original algorithm (when no faces detected)
@@ -287,7 +296,7 @@ def get_bubble_position(crop_coord, CAM_data, is_normal_page=False, frame_index=
         print("Least ROI coords after scaling: ", bubble_x, bubble_y)
     
     # Add padding to avoid edges
-    bubble_x, bubble_y = add_bubble_padding(bubble_x, bubble_y, crop_coord)
+    bubble_x, bubble_y = add_bubble_padding(bubble_x, bubble_y, crop_coord, bubble_width, bubble_height)
     
-    print(f"Final bubble position: ({bubble_x}, {bubble_y})")
+    print(f"Final bubble position: ({bubble_x}, {bubble_y}) for bubble size ({bubble_width}x{bubble_height})")
     return bubble_x, bubble_y

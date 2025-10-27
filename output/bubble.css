@@ -8,25 +8,13 @@
 }
 
 .bubble {
-  /* Responsive sizing using viewport units */
-  width: clamp(
-    150px,
-    20vw,
-    300px
-  ); /* Min 150px, ideal 20% of viewport, max 300px */
-  height: clamp(70px, 9.4vw, 140px); /* Maintains aspect ratio */
-  min-width: 150px;
-  min-height: 70px;
+  width: 200px;
+  height: 94px;
   background-color: white;
   border: 2px solid black;
   border-radius: 50%;
   font-family: "adam_warren_proregular";
-  /* Responsive font size */
-  font-size: clamp(
-    8px,
-    1vw,
-    14px
-  ); /* Min 8px, ideal 1% of viewport, max 14px */
+  font-size: 10px;
   display: flex;
   position: absolute;
   text-align: center;
@@ -34,7 +22,7 @@
   align-items: center;
   z-index: 2;
   box-sizing: border-box;
-  padding: clamp(6px, 0.8vw, 12px); /* Responsive padding */
+  padding: 8px;
   word-wrap: break-word;
 }
 
@@ -48,31 +36,4 @@
   position: absolute;
   transform: translate(0px, 0px) rotate(0deg);
   z-index: -1;
-}
-
-/* Tablet and smaller screens */
-@media (max-width: 768px) {
-  .bubble {
-    width: clamp(120px, 25vw, 200px);
-    height: clamp(56px, 11.75vw, 94px);
-    font-size: clamp(7px, 1.2vw, 12px);
-    padding: clamp(5px, 1vw, 10px);
-  }
-}
-
-/* Mobile screens */
-@media (max-width: 480px) {
-  .bubble {
-    width: clamp(100px, 30vw, 180px);
-    height: clamp(47px, 14.1vw, 85px);
-    font-size: clamp(6px, 1.5vw, 11px);
-    padding: clamp(4px, 1.2vw, 8px);
-    border: 1.5px solid black; /* Thinner border on mobile */
-  }
-
-  .tail {
-    border-top: 1.5vh solid transparent;
-    border-bottom: 1.5vh solid transparent;
-    border-left: 8vh solid rgb(255, 255, 255);
-  }
 }

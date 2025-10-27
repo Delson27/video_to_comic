@@ -54,14 +54,20 @@ function placeDialogs(page) {
       const bubble_x = Math.round(page["bubbles"][index]["bubble_offset_x"]);
       const bubble_y = Math.round(page["bubbles"][index]["bubble_offset_y"]);
 
+      // ✅ NEW: Use dynamic bubble sizes from backend
+      const bubble_width = page["bubbles"][index]["bubble_width"] || 200; // Fallback to 200
+      const bubble_height = page["bubbles"][index]["bubble_height"] || 94; // Fallback to 94
+
+      // Apply dynamic size
+      bubble_temp.style.width = `${bubble_width}px`;
+      bubble_temp.style.height = `${bubble_height}px`;
+
       if (emotion == "jagged") {
         bubble_temp.style.backgroundImage = `url("assets/jagged.png")`;
         bubble_temp.style.backgroundPosition = "center center";
         bubble_temp.style.backgroundRepeat = "no-repeat";
         bubble_temp.style.backgroundSize = "cover";
         bubble_temp.style.backgroundColor = "transparent";
-        bubble_temp.style.width = "200px";
-        bubble_temp.style.height = "94px";
         bubble_temp.style.padding = "70px";
         // ✅ FIX: Consistent 2px border for jagged bubbles
         bubble_temp.style.border = "none"; // Jagged style has custom border
