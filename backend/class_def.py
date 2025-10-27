@@ -78,12 +78,10 @@ class bubble:
 
     def __init__(self,bubble_offset_x,bubble_offset_y,lip_x,lip_y,dialog,emotion):
 
-        # Store dimensions as instance attributes
-        self.bubble_width = 200
-        self.bubble_height = 94
-        tail_centre_x = 100
-        tail_centre_y = 47
-        
+        bubble_width=200
+        bubble_height=94
+        tail_centre_x=100
+        tail_centre_y=47
         self.dialog = dialog
         self.emotion = emotion
 
@@ -98,23 +96,23 @@ class bubble:
         angle = 0
          
         print(f"lipx = {lip_x} and lipy = {lip_y}")
-        # If lip wasn't detected, default to pointing downward (most natural for speech)
+        # If lip wasn't detected
 
         if(lip_x==-1 and lip_y == -1):
-            # Default: tail points down (90 degrees)
-            angle = np.radians(90)  # Point downward by default
-            self.tail_deg = 90
-            self.tail_offset_x = 80 * np.cos(angle)  # x = 0 (straight down)
-            self.tail_offset_y = 80 * np.sin(angle)  # y = 80 (downward)
-            print("No lip detected - using default downward tail")
+            angle = 0
+            self.tail_offset_x = None
+            self.tail_offset_y = None
         else:
-            # Lip detected - point tail toward the detected lip position
             dx = lip_x - bubble_offset_x
             dy = lip_y - bubble_offset_y
             angle = np.arctan2(dy, dx)
-            print(f"Calculated tail angle: {np.degrees(angle)} degrees")
+            print(angle)
 
-            self.tail_deg = np.degrees(angle)
+            tail_offset_x = None
+            tail_offset_y = None
+
+            self.tail_deg=np.degrees(angle)
+
             self.tail_offset_x = 80 * np.cos(angle)
             self.tail_offset_y = 80 * np.sin(angle)
 

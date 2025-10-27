@@ -48,31 +48,24 @@ def bubble_create(video, crop_coords, black_x, black_y):
         idx_crop = min(idx, len(crop_coords) - 1)
         idx_cam = min(idx, len(CAM_data) - 1)
         
-        dialogue = sub.content
-        emotion = get_bubble_type(dialogue)
-        print(f'||emotion:{emotion}||')
-        
-        # Create bubble object first to calculate dynamic size
-        temp_bubble = bubble(0, 0, lip_x, lip_y, dialogue, emotion)
-        bubble_width = temp_bubble.bubble_width
-        bubble_height = temp_bubble.bubble_height
-        
         # Determine if this is a normal page or last page
         # You'll need to pass this information through the pipeline
         is_normal_page = True  # This needs to be determined based on your logic
         
-        # Pass frame_index and dynamic bubble size to enable face detection and optimal placement
+        # Pass frame_index to enable face detection
         bubble_x, bubble_y = get_bubble_position(
             crop_coords[idx_crop], 
             CAM_data[idx_cam], 
             is_normal_page,
-            frame_index=sub.index,  # Pass the frame number for face detection
-            bubble_width=bubble_width,  # Pass dynamic bubble width
-            bubble_height=bubble_height  # Pass dynamic bubble height
+            frame_index=sub.index  # Pass the frame number for face detection
         )
 
-        # Create final bubble with correct position
-        temp = bubble(bubble_x, bubble_y, lip_x, lip_y, dialogue, emotion, bubble_width, bubble_height)
+        dialogue = sub.content
+        emotion = get_bubble_type(dialogue)
+        print(f'||emotion:{emotion}||')
+
+
+        temp = bubble(bubble_x, bubble_y,lip_x,lip_y,sub.content,emotion)
         bubbles.append(temp)
 
     return bubbles
