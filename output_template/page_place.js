@@ -59,8 +59,9 @@ function placeDialogs(page) {
       wrapper.style.left = "0";
       wrapper.style.width = "100%";
       wrapper.style.height = "100%";
-      wrapper.style.overflow = "hidden"; // ✅ CRITICAL: Prevents bubble overflow
+      wrapper.style.overflow = "visible"; // ✅ CHANGED: Allow bubbles to be fully visible
       wrapper.style.pointerEvents = "none"; // Allow clicking through wrapper
+      wrapper.style.zIndex = "10"; // ✅ Ensure bubbles appear above panels
 
       const bubble_temp = document.createElement("div");
       bubble_temp.classList.add("bubble");
