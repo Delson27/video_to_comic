@@ -12,8 +12,9 @@ DEFAULT_BUBBLE_HEIGHT = 94
 face_detector = dlib.get_frontal_face_detector()
 
 # Face exclusion parameters
-FACE_PADDING = 20  # Extra pixels around face to avoid
-MIN_FACE_DISTANCE = 30  # Minimum distance bubble center should be from face edge
+# Increased values for strict face avoidance based on user feedback
+FACE_PADDING = 45  # Extra pixels around face to avoid (generous safety margin)
+MIN_FACE_DISTANCE = 60  # Minimum distance bubble center should be from face edge
 
 def detect_faces_in_panel(frame_path, crop_coord):
     """
