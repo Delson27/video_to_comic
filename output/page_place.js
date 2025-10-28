@@ -32,21 +32,40 @@ function placeDialogs(page) {
     gridItem.style.display = "flex";
     gridItem.style.gridRow = "span " + panel.row_span;
     gridItem.style.gridColumn = "span " + panel.col_span;
-    gridItem.style.backgroundImage = `url("${path}${panel.image}.png")`;
 
-    gridItem.innerHTML = "";
+    // ✅ REMOVED background image - using <img> element instead
+    // gridItem.style.backgroundImage = `url("${path}${panel.image}.png")`;
+
+    gridItem.innerHTML = ""; // Clear previous content
+
+    // ✅ NEW: Create actual <img> element for better control
+    const imgElement = document.createElement("img");
+    imgElement.src = `${path}${panel.image}.png`;
+    imgElement.style.width = "100%";
+    imgElement.style.height = "100%";
+    imgElement.style.objectFit = "cover"; // Fills panel, crops edges if needed
+    imgElement.style.objectPosition = "center center"; // Centers the image
+    imgElement.style.position = "absolute";
+    imgElement.style.top = "0";
+    imgElement.style.left = "0";
+    gridItem.appendChild(imgElement);
 
     const dialog_temp = page["bubbles"][index]["dialog"];
 
     if (dialog_temp != "((action-scene))") {
       const wrapper = document.createElement("div");
-      wrapper.style.position = "relative"; // Wrapper to contain the bubble
+      wrapper.style.position = "absolute"; // ✅ Changed from relative to absolute
+      wrapper.style.top = "0";
+      wrapper.style.left = "0";
       wrapper.style.width = "100%";
       wrapper.style.height = "100%";
+      wrapper.style.overflow = "hidden"; // ✅ CRITICAL: Prevents bubble overflow
+      wrapper.style.pointerEvents = "none"; // Allow clicking through wrapper
 
       const bubble_temp = document.createElement("div");
       bubble_temp.classList.add("bubble");
       bubble_temp.innerHTML = page["bubbles"][index]["dialog"];
+      bubble_temp.style.pointerEvents = "auto"; // Re-enable pointer events on bubble
 
       const emotion = page["bubbles"][index]["emotion"];
 

@@ -43,7 +43,7 @@ function placeDialogs(page) {
     imgElement.src = `${path}${panel.image}.png`;
     imgElement.style.width = "100%";
     imgElement.style.height = "100%";
-    imgElement.style.objectFit = "cover"; // Fills panel, crops edges if needed
+    imgElement.style.objectFit = "contain"; // Fills panel, crops edges if needed
     imgElement.style.objectPosition = "center center"; // Centers the image
     imgElement.style.position = "absolute";
     imgElement.style.top = "0";
