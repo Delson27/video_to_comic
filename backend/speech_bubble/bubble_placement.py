@@ -5,9 +5,9 @@ import numpy as np
 import os
 from PIL import Image
 
-# Default bubble sizes (kept for backward compatibility)
-DEFAULT_BUBBLE_WIDTH = 200
-DEFAULT_BUBBLE_HEIGHT = 94
+# Default bubble sizes (smaller to fit in letterbox areas)
+DEFAULT_BUBBLE_WIDTH = 160
+DEFAULT_BUBBLE_HEIGHT = 75
 
 # Initialize face detector (same as in lip_detection.py)
 face_detector = dlib.get_frontal_face_detector()
@@ -76,61 +76,78 @@ def place_bubble_in_letterbox(image_bounds, lip_y, panel_type):
     """
     Place bubble in the letterbox area (top or bottom background space).
     Chooses top or bottom based on where the speaker's mouth is.
+    Ensures bubble stays COMPLETELY within panel boundaries.
     Returns (bubble_x, bubble_y) in CSS pixels.
     """
-    if image_bounds is None:
-        # Fallback to center if detection failed
-        panel_width = types[panel_type]['width']
-        panel_height = types[panel_type]['height']
-        return (panel_width / 2 - DEFAULT_BUBBLE_WIDTH / 2, 10)
-    
     panel_width = types[panel_type]['width']
-    panel_height = image_bounds['panel_height']
+    panel_height = types[panel_type]['height']
+    bubble_width = DEFAULT_BUBBLE_WIDTH
+    bubble_height = DEFAULT_BUBBLE_HEIGHT
+    
+    # Safety margins to keep bubble fully inside panel
+    MARGIN = 8  # Pixels from panel edge
+    
+    if image_bounds is None:
+        # Fallback: center horizontally, top position
+        bubble_x = (panel_width - bubble_width) / 2
+        bubble_y = MARGIN
+        print(f"⚠️ No image bounds, using safe fallback at ({bubble_x:.1f}, {bubble_y:.1f})")
+        return (bubble_x, bubble_y)
+    
     image_top = image_bounds['image_top']
     image_bottom = image_bounds['image_bottom']
     top_space = image_bounds['top_letterbox_height']
     bottom_space = image_bounds['bottom_letterbox_height']
     
-    bubble_width = DEFAULT_BUBBLE_WIDTH
-    bubble_height = DEFAULT_BUBBLE_HEIGHT
-    
-    # Center horizontally
-    bubble_x = (panel_width - bubble_width) / 2
-    
-    # Decide top or bottom based on speaker position and available space
-    # If mouth is in top half of image, place bubble at bottom
-    # If mouth is in bottom half of image, place bubble at top
+    # Center horizontally with margin check
+    bubble_x = max(MARGIN, min((panel_width - bubble_width) / 2, panel_width - bubble_width - MARGIN))
     
     image_middle = (image_top + image_bottom) / 2
     
     print(f"Lip Y: {lip_y}, Image middle: {image_middle:.1f}, Top space: {top_space:.1f}, Bottom space: {bottom_space:.1f}")
     
-    # Prefer the letterbox area opposite to where the mouth is
-    if lip_y != -1 and lip_y < image_middle:
-        # Mouth in top half - try bottom letterbox first
-        if bottom_space >= bubble_height + 10:
-            bubble_y = image_bottom + 5  # Place just below image
-            print(f"Placing bubble in BOTTOM letterbox at y={bubble_y:.1f}")
-        elif top_space >= bubble_height + 10:
-            bubble_y = max(5, image_top - bubble_height - 5)  # Place just above image
-            print(f"Placing bubble in TOP letterbox at y={bubble_y:.1f}")
-        else:
-            # Not enough space, place at top of panel
-            bubble_y = 5
-            print(f"Insufficient letterbox space, placing at panel TOP")
-    else:
-        # Mouth in bottom half or unknown - try top letterbox first
-        if top_space >= bubble_height + 10:
-            bubble_y = max(5, image_top - bubble_height - 5)  # Place just above image
-            print(f"Placing bubble in TOP letterbox at y={bubble_y:.1f}")
-        elif bottom_space >= bubble_height + 10:
-            bubble_y = image_bottom + 5  # Place just below image
-            print(f"Placing bubble in BOTTOM letterbox at y={bubble_y:.1f}")
-        else:
-            # Not enough space, place at bottom of panel
-            bubble_y = panel_height - bubble_height - 5
-            print(f"Insufficient letterbox space, placing at panel BOTTOM")
+    # Minimum space required (bubble height + margins)
+    MIN_SPACE_REQUIRED = bubble_height + (2 * MARGIN)
     
+    # Decide placement based on available space and speaker position
+    if lip_y != -1 and lip_y < image_middle:
+        # Mouth in top half - prefer bottom letterbox
+        if bottom_space >= MIN_SPACE_REQUIRED:
+            # Place in bottom letterbox, ensuring it fits
+            bubble_y = min(image_bottom + MARGIN, panel_height - bubble_height - MARGIN)
+            print(f"✅ Placing in BOTTOM letterbox at y={bubble_y:.1f}")
+        elif top_space >= MIN_SPACE_REQUIRED:
+            # Fallback to top letterbox
+            bubble_y = max(MARGIN, image_top - bubble_height - MARGIN)
+            if bubble_y < MARGIN:
+                bubble_y = MARGIN  # Safety clamp
+            print(f"✅ Placing in TOP letterbox at y={bubble_y:.1f}")
+        else:
+            # Insufficient space - place at very top
+            bubble_y = MARGIN
+            print(f"⚠️ Insufficient space, placing at top with margin")
+    else:
+        # Mouth in bottom half or unknown - prefer top letterbox
+        if top_space >= MIN_SPACE_REQUIRED:
+            # Place in top letterbox
+            bubble_y = max(MARGIN, image_top - bubble_height - MARGIN)
+            if bubble_y < MARGIN:
+                bubble_y = MARGIN  # Safety clamp
+            print(f"✅ Placing in TOP letterbox at y={bubble_y:.1f}")
+        elif bottom_space >= MIN_SPACE_REQUIRED:
+            # Fallback to bottom letterbox
+            bubble_y = min(image_bottom + MARGIN, panel_height - bubble_height - MARGIN)
+            print(f"✅ Placing in BOTTOM letterbox at y={bubble_y:.1f}")
+        else:
+            # Insufficient space - place at very bottom
+            bubble_y = panel_height - bubble_height - MARGIN
+            print(f"⚠️ Insufficient space, placing at bottom with margin")
+    
+    # Final safety check: ensure bubble is completely within panel
+    bubble_y = max(MARGIN, min(bubble_y, panel_height - bubble_height - MARGIN))
+    bubble_x = max(MARGIN, min(bubble_x, panel_width - bubble_width - MARGIN))
+    
+    print(f"📍 Final clamped position: ({bubble_x:.1f}, {bubble_y:.1f})")
     return (bubble_x, bubble_y)
 
 def detect_faces_in_panel(frame_path, crop_coord):
