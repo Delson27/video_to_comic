@@ -52,12 +52,13 @@ def bubble_create(video, crop_coords, black_x, black_y):
         # You'll need to pass this information through the pipeline
         is_normal_page = True  # This needs to be determined based on your logic
         
-        # Pass frame_index to enable face detection
+        # ✅ Pass lip_y to help position bubble in appropriate letterbox area
         bubble_x, bubble_y = get_bubble_position(
             crop_coords[idx_crop], 
             CAM_data[idx_cam], 
             is_normal_page,
-            frame_index=sub.index  # Pass the frame number for face detection
+            frame_index=sub.index,  # Pass the frame number for image bounds detection
+            lip_y=lip_y  # ✅ NEW: Pass lip Y coordinate for smart placement
         )
 
         dialogue = sub.content

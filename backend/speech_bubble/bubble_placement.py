@@ -3,6 +3,7 @@ import cv2
 import dlib
 import numpy as np
 import os
+from PIL import Image
 
 # Default bubble sizes (kept for backward compatibility)
 DEFAULT_BUBBLE_WIDTH = 200
@@ -15,6 +16,122 @@ face_detector = dlib.get_frontal_face_detector()
 # Increased values for strict face avoidance based on user feedback
 FACE_PADDING = 45  # Extra pixels around face to avoid (generous safety margin)
 MIN_FACE_DISTANCE = 60  # Minimum distance bubble center should be from face edge
+
+
+def get_image_bounds_in_panel(frame_path, crop_coord, panel_type):
+    """
+    Detect where the actual image content is within the panel (excluding letterbox areas).
+    Returns (image_top, image_bottom) in CSS pixel coordinates.
+    """
+    try:
+        # Read the frame
+        frame = cv2.imread(frame_path)
+        if frame is None:
+            print(f"Warning: Could not load frame {frame_path}")
+            return None
+        
+        left, right, top, bottom = crop_coord
+        cropped_panel = frame[top:bottom, left:right]
+        
+        # Convert to grayscale and find non-black regions
+        gray = cv2.cvtColor(cropped_panel, cv2.COLOR_BGR2GRAY)
+        _, thresh = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
+        
+        # Find rows that have content (non-black pixels)
+        row_has_content = np.any(thresh > 0, axis=1)
+        
+        if not np.any(row_has_content):
+            print("Warning: No content detected in frame")
+            return None
+        
+        # Find first and last rows with content
+        content_rows = np.where(row_has_content)[0]
+        image_start_row = content_rows[0]
+        image_end_row = content_rows[-1]
+        
+        # Convert to CSS pixels
+        panel_height = types[panel_type]['height']
+        actual_height = bottom - top
+        scale_factor = panel_height / actual_height
+        
+        image_top_css = image_start_row * scale_factor
+        image_bottom_css = image_end_row * scale_factor
+        
+        print(f"Image bounds in panel: top={image_top_css:.1f}px, bottom={image_bottom_css:.1f}px (panel height={panel_height}px)")
+        
+        return {
+            'image_top': image_top_css,
+            'image_bottom': image_bottom_css,
+            'panel_height': panel_height,
+            'top_letterbox_height': image_top_css,
+            'bottom_letterbox_height': panel_height - image_bottom_css
+        }
+        
+    except Exception as e:
+        print(f"Error detecting image bounds: {e}")
+        return None
+
+
+def place_bubble_in_letterbox(image_bounds, lip_y, panel_type):
+    """
+    Place bubble in the letterbox area (top or bottom background space).
+    Chooses top or bottom based on where the speaker's mouth is.
+    Returns (bubble_x, bubble_y) in CSS pixels.
+    """
+    if image_bounds is None:
+        # Fallback to center if detection failed
+        panel_width = types[panel_type]['width']
+        panel_height = types[panel_type]['height']
+        return (panel_width / 2 - DEFAULT_BUBBLE_WIDTH / 2, 10)
+    
+    panel_width = types[panel_type]['width']
+    panel_height = image_bounds['panel_height']
+    image_top = image_bounds['image_top']
+    image_bottom = image_bounds['image_bottom']
+    top_space = image_bounds['top_letterbox_height']
+    bottom_space = image_bounds['bottom_letterbox_height']
+    
+    bubble_width = DEFAULT_BUBBLE_WIDTH
+    bubble_height = DEFAULT_BUBBLE_HEIGHT
+    
+    # Center horizontally
+    bubble_x = (panel_width - bubble_width) / 2
+    
+    # Decide top or bottom based on speaker position and available space
+    # If mouth is in top half of image, place bubble at bottom
+    # If mouth is in bottom half of image, place bubble at top
+    
+    image_middle = (image_top + image_bottom) / 2
+    
+    print(f"Lip Y: {lip_y}, Image middle: {image_middle:.1f}, Top space: {top_space:.1f}, Bottom space: {bottom_space:.1f}")
+    
+    # Prefer the letterbox area opposite to where the mouth is
+    if lip_y != -1 and lip_y < image_middle:
+        # Mouth in top half - try bottom letterbox first
+        if bottom_space >= bubble_height + 10:
+            bubble_y = image_bottom + 5  # Place just below image
+            print(f"Placing bubble in BOTTOM letterbox at y={bubble_y:.1f}")
+        elif top_space >= bubble_height + 10:
+            bubble_y = max(5, image_top - bubble_height - 5)  # Place just above image
+            print(f"Placing bubble in TOP letterbox at y={bubble_y:.1f}")
+        else:
+            # Not enough space, place at top of panel
+            bubble_y = 5
+            print(f"Insufficient letterbox space, placing at panel TOP")
+    else:
+        # Mouth in bottom half or unknown - try top letterbox first
+        if top_space >= bubble_height + 10:
+            bubble_y = max(5, image_top - bubble_height - 5)  # Place just above image
+            print(f"Placing bubble in TOP letterbox at y={bubble_y:.1f}")
+        elif bottom_space >= bubble_height + 10:
+            bubble_y = image_bottom + 5  # Place just below image
+            print(f"Placing bubble in BOTTOM letterbox at y={bubble_y:.1f}")
+        else:
+            # Not enough space, place at bottom of panel
+            bubble_y = panel_height - bubble_height - 5
+            print(f"Insufficient letterbox space, placing at panel BOTTOM")
+    
+    return (bubble_x, bubble_y)
 
 def detect_faces_in_panel(frame_path, crop_coord):
     """
@@ -217,17 +334,19 @@ def add_bubble_padding(least_roi_x, least_roi_y, crop_coord, bubble_width, bubbl
     return least_roi_x, least_roi_y
 
 
-def get_bubble_position(crop_coord, CAM_data, is_normal_page=False, frame_index=None, bubble_width=None, bubble_height=None):
+def get_bubble_position(crop_coord, CAM_data, is_normal_page=False, frame_index=None, bubble_width=None, bubble_height=None, lip_y=-1):
     """
-    Get optimal bubble position that avoids faces and prefers low-importance regions.
+    Get optimal bubble position in the letterbox areas (background space) of the panel.
+    Places bubbles OUTSIDE the image content, in the top or bottom letterbox areas.
     
     Args:
         crop_coord: Tuple of (left, right, top, bottom) coordinates
-        CAM_data: Dictionary with CAM heatmap data
+        CAM_data: Dictionary with CAM heatmap data  
         is_normal_page: Boolean indicating if this is a normal page
         frame_index: Frame number (1-indexed) to load the corresponding image
         bubble_width: Dynamic bubble width (defaults to DEFAULT_BUBBLE_WIDTH)
         bubble_height: Dynamic bubble height (defaults to DEFAULT_BUBBLE_HEIGHT)
+        lip_y: Y coordinate of speaker's mouth in CSS pixels (-1 if unknown)
     """
     # Use default sizes if not provided
     if bubble_width is None:
@@ -243,61 +362,30 @@ def get_bubble_position(crop_coord, CAM_data, is_normal_page=False, frame_index=
     else:
         panel_type = get_panel_type(left, right, top, bottom)
     
-    # Detect faces in the panel if frame_index is provided
-    faces = []
+    # ✅ NEW APPROACH: Place bubble in letterbox area (background space)
     if frame_index is not None:
         frame_path = f"frames/final/frame{frame_index:03}.png"
         if os.path.exists(frame_path):
-            faces = detect_faces_in_panel(frame_path, crop_coord)
+            print(f"\n🎯 Using LETTERBOX placement for frame {frame_index}")
+            
+            # Detect where the actual image content is within the panel
+            image_bounds = get_image_bounds_in_panel(frame_path, crop_coord, panel_type)
+            
+            # Place bubble in top or bottom letterbox area
+            bubble_x, bubble_y = place_bubble_in_letterbox(image_bounds, lip_y, panel_type)
+            
+            print(f"✅ Final bubble position: ({bubble_x:.1f}, {bubble_y:.1f}) - IN LETTERBOX AREA")
+            return bubble_x, bubble_y
         else:
-            print(f"Warning: Frame {frame_path} not found, skipping face detection")
+            print(f"Warning: Frame {frame_path} not found")
     
-    # Find best position avoiding faces
-    if faces:
-        print(f"Using face-aware placement for frame {frame_index} (bubble: {bubble_width}x{bubble_height})")
-        bubble_x, bubble_y = find_best_position_avoiding_faces(crop_coord, CAM_data, faces, panel_type, bubble_width, bubble_height)
-    else:
-        print(f"No faces detected or frame not provided, using standard CAM placement")
-        # Original algorithm (when no faces detected)
-        x_ = CAM_data['x_']
-        y_ = CAM_data['y_']
-        ten_map = CAM_data['ten_map']
-        
-        new_top = int(top / y_)
-        new_bottom = int(bottom / y_)
-        new_left = int(left / x_)
-        new_right = int(right / x_)
-        
-        min_value = float('inf')
-        min_point = None
-        
-        for i in range(new_left, new_right + 1):
-            for j in range(new_top, new_bottom + 1):
-                if (i < ten_map.shape[0] and j < ten_map.shape[1]) and ten_map[i][j] < min_value:
-                    min_point = (i, j)
-                    min_value = ten_map[i][j]
-        
-        least_roi_x = min_point[0] * x_
-        least_roi_y = min_point[1] * y_
-        
-        if least_roi_x < left:
-            least_roi_x = left
-        elif least_roi_x > right:
-            least_roi_x = right
-        if least_roi_y < top:
-            least_roi_y = top
-        elif least_roi_y > bottom:
-            least_roi_y = bottom
-        
-        least_roi_x -= left
-        least_roi_y -= top
-        print("Least ROI coords: ", least_roi_x, least_roi_y)
-        
-        bubble_x, bubble_y = convert_to_css_pixel(least_roi_x, least_roi_y, crop_coord, is_normal_page)
-        print("Least ROI coords after scaling: ", bubble_x, bubble_y)
+    # FALLBACK: If frame detection fails, use safe default positioning
+    panel_width = types[panel_type]['width']
+    panel_height = types[panel_type]['height']
     
-    # Add padding to avoid edges
-    bubble_x, bubble_y = add_bubble_padding(bubble_x, bubble_y, crop_coord, bubble_width, bubble_height)
+    # Place at top center as fallback
+    bubble_x = (panel_width - bubble_width) / 2
+    bubble_y = 10
     
-    print(f"Final bubble position: ({bubble_x}, {bubble_y}) for bubble size ({bubble_width}x{bubble_height})")
+    print(f"⚠️ Fallback: Placing bubble at top center ({bubble_x:.1f}, {bubble_y:.1f})")
     return bubble_x, bubble_y
