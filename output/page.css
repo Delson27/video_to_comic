@@ -83,12 +83,7 @@ body {
   border: 3px solid black;
   position: relative;
   overflow: hidden; /* ✅ CRITICAL: Clips bubbles and content to panel boundaries */
-  background: linear-gradient(
-    135deg,
-    #f5f5dc 0%,
-    #fffef0 50%,
-    #f5f5dc 100%
-  ); /* ✅ Vintage comic paper texture */
+  background-color: #fffacd; /* ✅ Vintage comic paper texture */
   /* Alternative options:
      - Solid beige: background-color: #f5f5dc;
      - Light cream: background-color: #fffef0;
