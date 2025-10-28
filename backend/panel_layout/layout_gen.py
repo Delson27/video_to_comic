@@ -12,29 +12,12 @@ def centroid_crop(index, panel_type, cam_coords, img_w, img_h):
     xC, yC = (right + left) / 2, (bottom + top) / 2
     w, h = right - left, bottom - top
 
-    # ✅ Make it a square based on the larger dimension
-    side = max(w, h)
-
-    crop_left = xC - (side / 2)
-    crop_right = xC + (side / 2)
-    crop_top = yC - (side / 2)
-    crop_bottom = yC + (side / 2)
-
-    # ✅ Reposition if crop goes outside image boundaries
-    if crop_left < 0:
-        crop_right -= crop_left
-        crop_left = 0
-    if crop_top < 0:
-        crop_bottom -= crop_top
-        crop_top = 0
-    if crop_right > img_w:
-        diff = crop_right - img_w
-        crop_left -= diff
-        crop_right = img_w
-    if crop_bottom > img_h:
-        diff = crop_bottom - img_h
-        crop_top -= diff
-        crop_bottom = img_h
+    # ✅ Use the actual image dimensions as the crop (no forced square)
+    # This ensures we use the full frame after black bar removal
+    crop_left = 0
+    crop_right = img_w
+    crop_top = 0
+    crop_bottom = img_h
 
     frame_path = os.path.join("frames", 'final', f"frame{index+1:03d}.png")
     crop_coords = crop_image(frame_path, crop_left, crop_right, crop_top, crop_bottom)
