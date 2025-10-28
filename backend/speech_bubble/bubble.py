@@ -3,7 +3,7 @@ import json
 import srt
 import pickle
 from backend.speech_bubble.lip_detection import get_lips
-from backend.speech_bubble.bubble_placement import get_bubble_position
+from backend.speech_bubble.bubble_placement import get_bubble_position, calculate_bubble_size
 from backend.speech_bubble.bubble_shape import get_bubble_type
 from backend.class_def import bubble
 import threading
@@ -52,16 +52,21 @@ def bubble_create(video, crop_coords, black_x, black_y):
         # You'll need to pass this information through the pipeline
         is_normal_page = True  # This needs to be determined based on your logic
         
-        # ✅ Pass lip_y to help position bubble in appropriate letterbox area
+        # ✅ Calculate bubble size based on dialogue length
+        dialogue = sub.content
+        bubble_width, bubble_height = calculate_bubble_size(dialogue)
+        
+        # ✅ Pass lip_y and calculated bubble sizes to help position bubble appropriately
         bubble_x, bubble_y = get_bubble_position(
             crop_coords[idx_crop], 
             CAM_data[idx_cam], 
             is_normal_page,
             frame_index=sub.index,  # Pass the frame number for image bounds detection
-            lip_y=lip_y  # ✅ NEW: Pass lip Y coordinate for smart placement
+            bubble_width=bubble_width,  # ✅ NEW: Pass calculated width
+            bubble_height=bubble_height,  # ✅ NEW: Pass calculated height
+            lip_y=lip_y  # ✅ Pass lip Y coordinate for smart placement
         )
 
-        dialogue = sub.content
         emotion = get_bubble_type(dialogue)
         print(f'||emotion:{emotion}||')
 

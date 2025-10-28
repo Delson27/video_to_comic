@@ -8,17 +8,13 @@
 }
 
 .bubble {
-  min-width: 200px; /* ✅ Minimum width */
-  max-width: 280px; /* ✅ Maximum width - can grow for long text */
-  min-height: 94px; /* ✅ Minimum height */
-  max-height: 150px; /* ✅ Maximum height - allows vertical expansion */
-  width: auto; /* ✅ Auto-adjust based on content */
-  height: auto; /* ✅ Auto-adjust based on content */
+  width: 160px; /* ✅ Smaller fixed width to fit letterbox areas */
+  height: 75px; /* ✅ Smaller fixed height to fit letterbox areas */
   background-color: white;
   border: 2px solid black;
   border-radius: 50%;
   font-family: "adam_warren_proregular";
-  font-size: 10px;
+  font-size: 9px; /* ✅ Slightly smaller font for compact bubbles */
   display: flex;
   position: absolute;
   text-align: center;
@@ -26,7 +22,7 @@
   align-items: center;
   z-index: 2;
   box-sizing: border-box;
-  padding: 15px 20px; /* ✅ Increased padding for better text spacing */
+  padding: 10px 15px; /* ✅ Compact padding */
   word-wrap: break-word;
   overflow-wrap: break-word; /* ✅ Ensures long words break properly */
   hyphens: auto; /* ✅ Adds hyphens for long words */

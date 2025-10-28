@@ -82,7 +82,7 @@ body {
   /* ✅ REMOVED background properties - using <img> elements now */
   border: 3px solid black;
   position: relative;
-  overflow: hidden; /* ✅ Clips content to prevent overlap with other panels */
+  overflow: visible; /* ✅ CRITICAL: Allow bubbles to extend beyond panel for visibility */
   background-color: #fffacd; /* ✅ Vintage comic paper texture */
   /* Alternative options:
      - Solid beige: background-color: #f5f5dc;

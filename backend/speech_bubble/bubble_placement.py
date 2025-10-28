@@ -3,11 +3,43 @@ import cv2
 import dlib
 import numpy as np
 import os
+import math
 from PIL import Image
 
-# Default bubble sizes (smaller to fit in letterbox areas)
-DEFAULT_BUBBLE_WIDTH = 160
-DEFAULT_BUBBLE_HEIGHT = 75
+# Default bubble sizes (dynamic sizing with min/max constraints)
+DEFAULT_BUBBLE_WIDTH = 140  # Minimum width
+DEFAULT_BUBBLE_HEIGHT = 60  # Minimum height
+MAX_BUBBLE_WIDTH = 200  # Maximum width
+MAX_BUBBLE_HEIGHT = 150  # Maximum height (allows expansion for longer text)
+
+def calculate_bubble_size(dialogue_text):
+    """
+    Calculate the required bubble size based on dialogue length.
+    Returns (width, height) ensuring all text will be visible.
+    """
+    text_length = len(dialogue_text)
+    
+    # Estimate lines needed (assuming ~25 chars per line at font size 10px)
+    chars_per_line = 25
+    estimated_lines = max(1, math.ceil(text_length / chars_per_line))
+    
+    # Calculate required height (base height + line height for each additional line)
+    line_height = 14  # pixels per line at font size 10px with line-height 1.4
+    required_height = DEFAULT_BUBBLE_HEIGHT + (estimated_lines - 2) * line_height if estimated_lines > 2 else DEFAULT_BUBBLE_HEIGHT
+    
+    # Clamp to max height
+    height = min(required_height, MAX_BUBBLE_HEIGHT)
+    
+    # Width scales slightly with text length but clamped to max
+    if text_length < 30:
+        width = DEFAULT_BUBBLE_WIDTH
+    elif text_length < 60:
+        width = 170
+    else:
+        width = MAX_BUBBLE_WIDTH
+    
+    print(f"Dialogue length: {text_length} chars → Bubble size: {width}x{height}px ({estimated_lines} lines)")
+    return width, height
 
 # Initialize face detector (same as in lip_detection.py)
 face_detector = dlib.get_frontal_face_detector()
