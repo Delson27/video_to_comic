@@ -79,11 +79,11 @@ body {
 }
 
 .grid-item {
-  background-position: center center;
-  background-repeat: no-repeat;
-  background-size: contain;
+  /* ✅ REMOVED background properties - using <img> elements now */
   border: 3px solid black;
   position: relative;
+  overflow: hidden; /* ✅ CRITICAL: Clips bubbles and content to panel boundaries */
+  background-color: white; /* Fallback color if image doesn't load */
 }
 
 /* ✅ Normal pages - 8 panels, all squares */

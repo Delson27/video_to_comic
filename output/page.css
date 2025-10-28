@@ -81,7 +81,7 @@ body {
 .grid-item {
   background-position: center center;
   background-repeat: no-repeat;
-  background-size: cover; /* ✅ Fills panel completely, may crop edges */
+  background-size: contain;
   border: 3px solid black;
   position: relative;
 }
