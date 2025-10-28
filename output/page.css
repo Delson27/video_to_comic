@@ -81,10 +81,12 @@ body {
 .grid-item {
   background-position: center center;
   background-repeat: no-repeat;
-  background-size: cover; /* ✅ Changed from 'contain' to 'cover' to fill panel completely */
+  background-size: cover; /* ✅ Fills panel completely, may crop edges */
   border: 3px solid black;
   position: relative;
-} /* ✅ Normal pages - 8 panels, all squares */
+}
+
+/* ✅ Normal pages - 8 panels, all squares */
 .grid-container.squares .grid-item {
   aspect-ratio: 1 / 1; /* keeps panel a perfect square */
   height: auto; /* allows square ratio to control size */
