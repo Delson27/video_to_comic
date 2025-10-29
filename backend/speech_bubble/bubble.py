@@ -1,7 +1,7 @@
 import json
 import srt
 import pickle
-from backend.speech_bubble.lip_detection import get_lips
+from backend.speech_bubble.lip_detection import get_lips, refine_lip_position_with_proximity
 from backend.speech_bubble.bubble_placement import get_bubble_position, calculate_bubble_size
 from backend.speech_bubble.bubble_shape import get_bubble_type
 from backend.class_def import bubble
@@ -26,7 +26,9 @@ def bubble_create(video, crop_coords, black_x, black_y):
     with open('CAM_data.pkl', 'rb') as f:
         CAM_data = pickle.load(f)
 
-    lips = get_lips(video, crop_coords,black_x,black_y)
+    # ✅ FIRST PASS: Get initial lip positions (may be incorrect for multi-speaker scenes)
+    lips = get_lips(video, crop_coords, black_x, black_y)
+    
     # Dumping lips
     with open('lips.pkl', 'wb') as f:
         pickle.dump(lips, f)
@@ -92,7 +94,51 @@ def bubble_create(video, crop_coords, black_x, black_y):
             panel_info['height'],
         )
         bubbles.append(temp)
-
+    
+    # ✅ SECOND PASS: Refine lip positions for multi-speaker scenes
+    print("\n✅ PASS 2: Refining lip positions for multi-speaker scenes...")
+    for i, sub in enumerate(subs):
+        if i >= len(bubbles):
+            break
+            
+        current_bubble = bubbles[i]
+        current_lip = lips[sub.index]
+        
+        # Skip if no lip was detected initially
+        if current_lip == (-1, -1):
+            continue
+        
+        # Try to refine using proximity to bubble
+        idx_crop = min(sub.index - 1, len(crop_coords) - 1)
+        refined_lip = refine_lip_position_with_proximity(
+            sub.index,
+            video,
+            crop_coords,
+            black_x,
+            black_y,
+            (current_bubble.bubble_x, current_bubble.bubble_y)
+        )
+        
+        if refined_lip:
+            # Update bubble with refined lip position
+            print(f"  Frame {sub.index}: Updated lip from {current_lip} to {refined_lip}")
+            
+            # Recalculate tail angle with new lip position
+            import numpy as np
+            dx = refined_lip[0] - current_bubble.bubble_x
+            dy = refined_lip[1] - current_bubble.bubble_y
+            angle = np.arctan2(dy, dx)
+            
+            current_bubble.lip_x = refined_lip[0]
+            current_bubble.lip_y = refined_lip[1]
+            current_bubble.tail_deg = np.degrees(angle)
+            
+            tail_length = 80
+            current_bubble.tail_offset_x = tail_length * np.cos(angle)
+            current_bubble.tail_offset_y = tail_length * np.sin(angle)
+            current_bubble.tail_length = tail_length
+    
+    return bubbles
     return bubbles
 
 

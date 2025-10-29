@@ -239,3 +239,188 @@ html {
     aspect-ratio: 16/9;
   }
 }
+
+/* PDF Download Modal Styles */
+.pdf-modal {
+  display: none;
+  position: fixed;
+  z-index: 10000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pdf-modal-content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2.5rem;
+  border-radius: 20px;
+  text-align: center;
+  min-width: 400px;
+  max-width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.4s ease-out;
+  position: relative;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.pdf-modal-content h3 {
+  color: white;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.pdf-progress-container {
+  width: 100%;
+  height: 40px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 25px;
+  margin: 1.5rem 0;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.pdf-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+  border-radius: 25px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pdf-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.pdf-progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.pdf-modal-message {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  margin: 1rem 0;
+  min-height: 24px;
+}
+
+.pdf-modal-icon {
+  margin-top: 1rem;
+  font-size: 3rem;
+  font-weight: bold;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdf-modal-icon.success {
+  color: #22c55e;
+  animation: scaleIn 0.5s ease-out;
+}
+
+.pdf-modal-icon.error {
+  color: #ef4444;
+  animation: shake 0.5s ease-out;
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+/* Mobile responsive for modal */
+@media (max-width: 768px) {
+  .pdf-modal-content {
+    min-width: auto;
+    width: 90%;
+    padding: 2rem 1.5rem;
+  }
+
+  .pdf-modal-content h3 {
+    font-size: 1.4rem;
+  }
+
+  .pdf-progress-container {
+    height: 35px;
+  }
+
+  .pdf-modal-icon {
+    font-size: 2.5rem;
+    min-height: 50px;
+  }
+}

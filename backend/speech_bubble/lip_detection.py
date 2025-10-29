@@ -53,6 +53,103 @@ def similar_to_keyframe(face_rects, keyframe_face_rects):
     else:
         return False
 
+def refine_lip_position_with_proximity(sub_index, video, crop_coords, black_x, black_y, bubble_position, save_debug=True):
+    """
+    Refine lip position for a specific subtitle by considering bubble position.
+    Used for multi-speaker correction.
+    
+    Args:
+        save_debug: If True, saves annotated debug image showing all faces and selected lip
+    """
+    keyframe_path = f"frames/final/frame{sub_index:03}.png"
+    keyframe = cv2.imread(keyframe_path)
+    
+    if keyframe is None:
+        return (-1, -1)
+    
+    gray = cv2.cvtColor(keyframe, cv2.COLOR_BGR2GRAY)
+    face_rects = face_detector(gray, 1)
+    
+    if len(face_rects) <= 1:
+        # Not a multi-speaker scene, no refinement needed
+        return None
+    
+    print(f"✅ Refining lip position for frame {sub_index} with {len(face_rects)} faces")
+    
+    # Detect all face landmarks and find closest to bubble
+    closest_lip = None
+    min_distance = float('inf')
+    closest_rect = None
+    all_lips = []  # For debugging
+    
+    for rect in face_rects:
+        landmark = landmark_detector(gray, rect)
+        lip_x_raw = landmark.part(65).x
+        lip_y_raw = landmark.part(65).y
+        
+        # Calculate distance from this lip to bubble position
+        distance = sqrt(
+            (lip_x_raw - bubble_position[0])**2 + 
+            (lip_y_raw - bubble_position[1])**2
+        )
+        
+        all_lips.append((lip_x_raw, lip_y_raw, distance))
+        
+        if distance < min_distance:
+            min_distance = distance
+            closest_lip = (lip_x_raw, lip_y_raw)
+            closest_rect = rect
+    
+    if closest_lip:
+        # Save debug visualization
+        if save_debug:
+            debug_img = keyframe.copy()
+            
+            # Draw all detected faces in red
+            for rect in face_rects:
+                x1, y1 = rect.left(), rect.top()
+                x2, y2 = rect.right(), rect.bottom()
+                cv2.rectangle(debug_img, (x1, y1), (x2, y2), (0, 0, 255), 2)
+            
+            # Draw selected face in green
+            if closest_rect:
+                x1, y1 = closest_rect.left(), closest_rect.top()
+                x2, y2 = closest_rect.right(), closest_rect.bottom()
+                cv2.rectangle(debug_img, (x1, y1), (x2, y2), (0, 255, 0), 3)
+            
+            # Draw all lip positions
+            for lip_x_raw, lip_y_raw, dist in all_lips:
+                cv2.circle(debug_img, (int(lip_x_raw), int(lip_y_raw)), 5, (0, 0, 255), -1)
+                cv2.putText(debug_img, f"{dist:.0f}", (int(lip_x_raw) + 10, int(lip_y_raw)), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+            
+            # Draw selected lip in green
+            cv2.circle(debug_img, (int(closest_lip[0]), int(closest_lip[1])), 8, (0, 255, 0), -1)
+            
+            # Draw bubble position reference
+            bx, by = int(bubble_position[0]), int(bubble_position[1])
+            cv2.circle(debug_img, (bx, by), 10, (255, 0, 0), 2)
+            cv2.putText(debug_img, "Bubble", (bx + 15, by), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+            
+            # Save debug image
+            debug_dir = "debug_lip_detection"
+            os.makedirs(debug_dir, exist_ok=True)
+            debug_path = os.path.join(debug_dir, f"frame{sub_index:03}_refined.png")
+            cv2.imwrite(debug_path, debug_img)
+            print(f"⚙️ Debug image saved: {debug_path}")
+        
+        # Convert to CSS pixels
+        origin = (crop_coords[sub_index - 1][0], crop_coords[sub_index - 1][2])
+        x = closest_lip[0] - (origin[0] + black_x)
+        y = closest_lip[1] - (origin[1] + black_y)
+        x, y = convert_to_css_pixel(x, y, crop_coords[sub_index - 1])
+        print(f"✅ Refined lip position: ({x:.1f}, {y:.1f}) at distance {min_distance:.1f}")
+        return (x, y)
+    
+    return None
+
+
 #crop_coords contain left,right,top,bottom of each frame
 def get_lips(video, crop_coords, black_x, black_y):
     print(crop_coords)
@@ -102,7 +199,7 @@ def get_lips(video, crop_coords, black_x, black_y):
     return lips
 
 
-def get_multi_speaker_lips(sub,video, keyframe_face_rects):
+def get_multi_speaker_lips(sub, video, keyframe_face_rects, bubble_position=None):
     start_time = sub.start.total_seconds()
     end_time = sub.end.total_seconds()
     keyframe_path = f"frames/final/frame{sub.index:03}.png"
@@ -202,20 +299,71 @@ def get_multi_speaker_lips(sub,video, keyframe_face_rects):
 
    
     print("Lip motion count, total_frames_selected = ", lip_motion_count, total_frames_selected)
-    # print("max lip count ratio = ", lip_motion_count / (total_frames_selected-1))
+    
+    # ✅ IMPROVED: Choose speaker based on both lip movement AND proximity to bubble
     try:
-        max_lip_index = max(lip_motion_count, key=lip_motion_count.get)
-        # max_value = lip_motion_count[max_lip_index]
-        # if max_lip_count / (total_frames_selected-1) > THETA2:
-        #     print("speaking")
-        if lip_motion_count[max_lip_index] / (total_frames_selected-1) > THETA2:
-            return lip_coords[max_lip_index]
+        if not lip_motion_count:
+            # No lip motion detected at all
+            if bubble_position and lip_coords:
+                # Fallback: Choose face closest to bubble position
+                print("⚠️ No lip motion detected, using proximity-based selection")
+                closest_face = min(
+                    lip_coords.items(),
+                    key=lambda item: sqrt(
+                        (item[1][0] - bubble_position[0])**2 + 
+                        (item[1][1] - bubble_position[1])**2
+                    )
+                )
+                return closest_face[1]
+            return (-1, -1)
+        
+        # Find faces with significant lip movement
+        active_speakers = [
+            idx for idx, count in lip_motion_count.items()
+            if count / (total_frames_selected - 1) > THETA2
+        ]
+        
+        if not active_speakers:
+            print("⚠️ No speakers passed motion threshold")
+            # Fallback: Use face with most movement, or closest to bubble
+            if bubble_position and lip_coords:
+                closest_face = min(
+                    lip_motion_count.items(),
+                    key=lambda item: sqrt(
+                        (lip_coords[item[0]][0] - bubble_position[0])**2 + 
+                        (lip_coords[item[0]][1] - bubble_position[1])**2
+                    )
+                )
+                return lip_coords[closest_face[0]]
+            return (-1, -1)
+        
+        if len(active_speakers) == 1:
+            # Single active speaker detected
+            print(f"✅ Single speaker detected: face {active_speakers[0]}")
+            return lip_coords[active_speakers[0]]
+        
+        # Multiple active speakers - choose based on proximity to bubble if available
+        if bubble_position:
+            print(f"⚠️ Multiple speakers detected: {active_speakers}, using proximity")
+            closest_speaker = min(
+                active_speakers,
+                key=lambda idx: sqrt(
+                    (lip_coords[idx][0] - bubble_position[0])**2 + 
+                    (lip_coords[idx][1] - bubble_position[1])**2
+                )
+            )
+            print(f"✅ Selected speaker {closest_speaker} (closest to bubble)")
+            return lip_coords[closest_speaker]
         else:
-            return (-1,-1)
+            # No bubble position available, use most active speaker
+            max_lip_index = max(lip_motion_count, key=lip_motion_count.get)
+            print(f"✅ Selected speaker {max_lip_index} (most lip movement)")
+            return lip_coords[max_lip_index]
+            
     except ValueError:
-        return (-1,-1)
+        return (-1, -1)
     except ZeroDivisionError:
-        return (-1,-1)
+        return (-1, -1)
 
 
 

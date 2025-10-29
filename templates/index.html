@@ -125,8 +125,64 @@
         </div>
       </div>
     </div>
+    <!-- PDF Download Progress Modal -->
+    <div id="pdfDownloadModal" class="pdf-modal" style="display: none;">
+      <div class="pdf-modal-content">
+        <h3 id="pdfModalTitle">Preparing PDF...</h3>
+        <div class="pdf-progress-container">
+          <div id="pdfProgressBar" class="pdf-progress-bar"></div>
+          <div id="pdfProgressText" class="pdf-progress-text">0%</div>
+        </div>
+        <p id="pdfModalMessage" class="pdf-modal-message">Rendering comic pages...</p>
+        <div id="pdfModalIcon" class="pdf-modal-icon"></div>
+      </div>
+    </div>
+
     <script>
       function downloadPDF() {
+        const modal = document.getElementById('pdfDownloadModal');
+        const modalTitle = document.getElementById('pdfModalTitle');
+        const modalMessage = document.getElementById('pdfModalMessage');
+        const modalIcon = document.getElementById('pdfModalIcon');
+        const progressBar = document.getElementById('pdfProgressBar');
+        const progressText = document.getElementById('pdfProgressText');
+        const downloadBtn = document.getElementById('downloadButton');
+
+        // Show modal
+        modal.style.display = 'flex';
+        downloadBtn.disabled = true;
+        downloadBtn.textContent = 'Downloading...';
+        downloadBtn.style.opacity = '0.6';
+
+        // Reset modal state
+        modalTitle.textContent = 'Preparing PDF...';
+        modalMessage.textContent = 'Rendering comic pages...';
+        modalIcon.className = 'pdf-modal-icon';
+        modalIcon.innerHTML = '';
+        progressBar.style.width = '0%';
+        progressBar.style.backgroundColor = '#3b82f6';
+        progressText.textContent = '0%';
+
+        // Simulate progress (since PDF generation happens on backend)
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+          if (progress < 90) {
+            progress += Math.random() * 15;
+            if (progress > 90) progress = 90;
+            progressBar.style.width = progress + '%';
+            progressText.textContent = Math.round(progress) + '%';
+            
+            // Update message based on progress
+            if (progress < 30) {
+              modalMessage.textContent = 'Rendering comic pages...';
+            } else if (progress < 60) {
+              modalMessage.textContent = 'Compressing images...';
+            } else {
+              modalMessage.textContent = 'Finalizing PDF...';
+            }
+          }
+        }, 200);
+
         fetch("/generate-pdf", { method: "GET" })
           .then((response) => {
             if (!response.ok) {
@@ -137,6 +193,19 @@
             return response.blob();
           })
           .then((blob) => {
+            clearInterval(progressInterval);
+            
+            // Complete progress
+            progressBar.style.width = '100%';
+            progressBar.style.backgroundColor = '#22c55e';
+            progressText.textContent = '100%';
+            
+            // Show success state
+            modalTitle.textContent = 'Download Complete!';
+            modalMessage.textContent = 'Your comic PDF has been downloaded successfully.';
+            modalIcon.className = 'pdf-modal-icon success';
+            modalIcon.innerHTML = '✓';
+
             // Create a download link and trigger it
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement("a");
@@ -146,12 +215,49 @@
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-            alert("PDF downloaded successfully!");
+
+            // Reset button
+            downloadBtn.disabled = false;
+            downloadBtn.textContent = 'Download as PDF';
+            downloadBtn.style.opacity = '1';
+
+            // Close modal after 2 seconds
+            setTimeout(() => {
+              modal.style.display = 'none';
+            }, 2000);
           })
           .catch((error) => {
-            alert("Error: " + error.message);
+            clearInterval(progressInterval);
+            
+            // Show error state
+            progressBar.style.width = '100%';
+            progressBar.style.backgroundColor = '#ef4444';
+            progressText.textContent = 'Failed';
+            
+            modalTitle.textContent = 'Download Failed';
+            modalMessage.textContent = error.message || 'An error occurred while generating the PDF.';
+            modalIcon.className = 'pdf-modal-icon error';
+            modalIcon.innerHTML = '✕';
+
+            // Reset button
+            downloadBtn.disabled = false;
+            downloadBtn.textContent = 'Download as PDF';
+            downloadBtn.style.opacity = '1';
+
+            // Close modal after 3 seconds
+            setTimeout(() => {
+              modal.style.display = 'none';
+            }, 3000);
           });
       }
+
+      // Allow closing modal by clicking outside
+      window.onclick = function(event) {
+        const modal = document.getElementById('pdfDownloadModal');
+        if (event.target === modal) {
+          modal.style.display = 'none';
+        }
+      };
     </script>
     <script src="{{url_for('static', filename='script.js')}}"></script>
     <script src="{{url_for('static', filename='bootstrap.bundle.min.js')}}"></script>

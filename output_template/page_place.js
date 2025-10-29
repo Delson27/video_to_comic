@@ -70,13 +70,23 @@ function placeDialogs(page) {
 
       const emotion = page["bubbles"][index]["emotion"];
 
-      // ✅ FIXED positions from backend (already calculated in CSS pixels, no scaling)
-      const bubble_x = Math.round(
-        page["bubbles"][index]["bubble_offset_x"] || 0
-      );
-      const bubble_y = Math.round(
-        page["bubbles"][index]["bubble_offset_y"] || 0
-      );
+      // ✅ Responsive scaling: convert backend CSS pixels to current panel size
+      const basePanelWidth =
+        Number(page["bubbles"][index]["panel_width"]) || gridItem.clientWidth;
+      const basePanelHeight =
+        Number(page["bubbles"][index]["panel_height"]) || gridItem.clientHeight;
+
+      const actualPanelWidth = gridItem.clientWidth;
+      const actualPanelHeight = gridItem.clientHeight;
+
+      const scaleX = actualPanelWidth / basePanelWidth;
+      const scaleY = actualPanelHeight / basePanelHeight;
+
+      const rawBubbleX = Number(page["bubbles"][index]["bubble_offset_x"]) || 0;
+      const rawBubbleY = Number(page["bubbles"][index]["bubble_offset_y"]) || 0;
+
+      const bubble_x = rawBubbleX * scaleX;
+      const bubble_y = rawBubbleY * scaleY;
 
       if (emotion == "jagged") {
         bubble_temp.style.backgroundImage = `url("assets/jagged.png")`;
@@ -84,19 +94,25 @@ function placeDialogs(page) {
         bubble_temp.style.backgroundRepeat = "no-repeat";
         bubble_temp.style.backgroundSize = "cover";
         bubble_temp.style.backgroundColor = "transparent";
-        bubble_temp.style.width = "200px";
-        bubble_temp.style.height = "94px";
-        bubble_temp.style.padding = "70px";
-        // ✅ FIX: Consistent 2px border for jagged bubbles
-        bubble_temp.style.border = "none"; // Jagged style has custom border
+        bubble_temp.style.width = `${200 * scaleX}px`;
+        bubble_temp.style.height = `${94 * scaleY}px`;
+        bubble_temp.style.padding = `${70 * Math.min(scaleX, scaleY)}px`;
+        bubble_temp.style.border = "none";
       } else {
-        // ✅ FIX: Consistent styling for normal bubbles
         bubble_temp.style.border = "2px solid black";
         bubble_temp.style.backgroundColor = "white";
       }
 
-      bubble_temp.style.fontSize = "10px"; // ✅ Fixed font size
+      bubble_temp.style.fontSize = `${Math.max(8, 10 * Math.min(scaleX, scaleY))}px`;
       bubble_temp.style.transform = `translate(${bubble_x}px, ${bubble_y}px)`;
+
+      const baseBubbleWidth = Number(page["bubbles"][index]["bubble_width"]);
+      const baseBubbleHeight = Number(page["bubbles"][index]["bubble_height"]);
+      if (!Number.isNaN(baseBubbleWidth) && !Number.isNaN(baseBubbleHeight)) {
+        bubble_temp.style.minWidth = `${baseBubbleWidth * scaleX}px`;
+        bubble_temp.style.maxWidth = `${baseBubbleWidth * scaleX}px`;
+        bubble_temp.style.minHeight = `${baseBubbleHeight * scaleY}px`;
+      }
 
       const tail = document.createElement("div");
       tail.classList.add("tail");
@@ -106,9 +122,10 @@ function placeDialogs(page) {
       ) {
         tail.style.display = "none";
       } else {
-        // ✅ FIXED tail positions (already in CSS pixels, no scaling)
-        const tail_x = Math.round(page["bubbles"][index]["tail_offset_x"] || 0);
-        const tail_y = Math.round(page["bubbles"][index]["tail_offset_y"] || 0);
+        const rawTailX = Number(page["bubbles"][index]["tail_offset_x"]) || 0;
+        const rawTailY = Number(page["bubbles"][index]["tail_offset_y"]) || 0;
+        const tail_x = rawTailX * scaleX;
+        const tail_y = rawTailY * scaleY;
         tail.style.transform = `translate(${tail_x}px, ${tail_y}px) rotate(${page["bubbles"][index]["tail_deg"]}deg)`;
       }
 
@@ -164,7 +181,31 @@ document.addEventListener("DOMContentLoaded", function () {
   console.log("Current page:", current_page + 1);
   placeDialogs(pages[current_page]);
   updateNavigationButtons(); // Update button states on initial load
+
+  // Recalculate bubble positions when the layout changes (resize/zoom/orientation)
+  const debouncedRecalc = debounce(function () {
+    placeDialogs(pages[current_page]);
+  }, 100);
+
+  window.addEventListener("resize", debouncedRecalc);
+  window.addEventListener("orientationchange", function () {
+    placeDialogs(pages[current_page]);
+  });
+
+  const gridContainer = document.querySelector(".grid-container");
+  if (window.ResizeObserver && gridContainer) {
+    const ro = new ResizeObserver(() => debouncedRecalc());
+    ro.observe(gridContainer);
+  }
 });
+
+function debounce(fn, wait) {
+  let t;
+  return function (...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), wait);
+  };
+}
 
 function prevPage() {
   // Prevent navigation if already on first page

@@ -8,15 +8,15 @@
 }
 
 .bubble {
-  min-width: 140px; /* ✅ Minimum width for compact bubbles */
-  max-width: 200px; /* ✅ Maximum width to prevent too-wide bubbles */
-  min-height: 60px; /* ✅ Minimum height for short text */
-  max-height: none; /* ✅ CRITICAL: Allow unlimited height for long dialogue */
+  min-width: 140px;
+  max-width: 200px;
+  min-height: 60px;
+  max-height: none; /* Allow unlimited height for long dialogue */
   background-color: white;
   border: 2px solid black;
   border-radius: 50%;
   font-family: "adam_warren_proregular";
-  font-size: 10px; /* ✅ Increased from 9px for better readability */
+  font-size: 10px;
   display: flex;
   position: absolute;
   text-align: center;
@@ -24,13 +24,13 @@
   align-items: center;
   z-index: 2;
   box-sizing: border-box;
-  padding: 12px 16px; /* ✅ Balanced padding for readability */
+  padding: 12px 16px;
   word-wrap: break-word;
-  overflow-wrap: break-word; /* ✅ Ensures long words break properly */
-  hyphens: auto; /* ✅ Adds hyphens for long words */
-  line-height: 1.4; /* ✅ Improved line spacing for readability */
-  overflow: visible; /* ✅ CRITICAL: Never hide text overflow */
-  white-space: normal; /* ✅ Allow text wrapping */
+  overflow-wrap: break-word;
+  hyphens: auto;
+  line-height: 1.4;
+  overflow: visible;
+  white-space: normal;
 }
 
 .tail {
