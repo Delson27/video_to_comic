@@ -76,45 +76,63 @@ class panel:
 
 class bubble:
 
-    def __init__(self,bubble_offset_x,bubble_offset_y,lip_x,lip_y,dialog,emotion):
+    def __init__(
+        self,
+        bubble_offset_x,
+        bubble_offset_y,
+        lip_x,
+        lip_y,
+        dialog,
+        emotion,
+        bubble_width,
+        bubble_height,
+        panel_type,
+        panel_width,
+        panel_height,
+    ):
 
-        bubble_width=200
-        bubble_height=94
-        tail_centre_x=100
-        tail_centre_y=47
         self.dialog = dialog
         self.emotion = emotion
 
+        # Base bubble placement (in CSS pixels calculated on backend)
         self.bubble_offset_x = bubble_offset_x
         self.bubble_offset_y = bubble_offset_y
-        # Provide aliases expected by other modules (bubble_x/bubble_y and lip_x/lip_y)
         self.bubble_x = bubble_offset_x
         self.bubble_y = bubble_offset_y
+
+        # Lip coordinates for tail placement
         self.lip_x = lip_x
         self.lip_y = lip_y
-        
-        angle = 0
-         
-        print(f"lipx = {lip_x} and lipy = {lip_y}")
-        # If lip wasn't detected
 
-        if(lip_x==-1 and lip_y == -1):
-            angle = 0
+        # Persist panel metadata so front-end can rescale positions when layout changes
+        self.panel_type = panel_type
+        self.panel_width = panel_width
+        self.panel_height = panel_height
+
+        # Persist bubble size calculated on backend (used for responsive scaling)
+        self.bubble_width = bubble_width
+        self.bubble_height = bubble_height
+
+        print(f"lipx = {lip_x} and lipy = {lip_y}")
+
+        if lip_x == -1 and lip_y == -1:
+            # Missing lip detection – hide tail
             self.tail_offset_x = None
             self.tail_offset_y = None
+            self.tail_deg = 0
         else:
             dx = lip_x - bubble_offset_x
             dy = lip_y - bubble_offset_y
             angle = np.arctan2(dy, dx)
             print(angle)
 
-            tail_offset_x = None
-            tail_offset_y = None
+            self.tail_deg = np.degrees(angle)
 
-            self.tail_deg=np.degrees(angle)
-
-            self.tail_offset_x = 80 * np.cos(angle)
-            self.tail_offset_y = 80 * np.sin(angle)
+            # Store tail offsets relative to bubble origin (will be rescaled on front-end)
+            tail_length = 80
+            self.tail_offset_x = tail_length * np.cos(angle)
+            self.tail_offset_y = tail_length * np.sin(angle)
+            self.tail_length = tail_length
 
 
 class Page:

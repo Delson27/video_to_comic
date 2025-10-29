@@ -70,9 +70,21 @@ function placeDialogs(page) {
 
       const emotion = page["bubbles"][index]["emotion"];
 
-      // ✅ FIX: Use rounded coordinates for consistent placement
-      const bubble_x = Math.round(page["bubbles"][index]["bubble_offset_x"]);
-      const bubble_y = Math.round(page["bubbles"][index]["bubble_offset_y"]);
+  // ✅ Responsive scaling: convert backend CSS pixels to current panel size
+  const basePanelWidth = Number(page["bubbles"][index]["panel_width"]) || gridItem.clientWidth;
+  const basePanelHeight = Number(page["bubbles"][index]["panel_height"]) || gridItem.clientHeight;
+
+  const actualPanelWidth = gridItem.clientWidth;
+  const actualPanelHeight = gridItem.clientHeight;
+
+  const scaleX = actualPanelWidth / basePanelWidth;
+  const scaleY = actualPanelHeight / basePanelHeight;
+
+  const rawBubbleX = Number(page["bubbles"][index]["bubble_offset_x"]) || 0;
+  const rawBubbleY = Number(page["bubbles"][index]["bubble_offset_y"]) || 0;
+
+  const bubble_x = rawBubbleX * scaleX;
+  const bubble_y = rawBubbleY * scaleY;
 
       if (emotion == "jagged") {
         bubble_temp.style.backgroundImage = `url("assets/jagged.png")`;
@@ -91,8 +103,16 @@ function placeDialogs(page) {
         bubble_temp.style.backgroundColor = "white";
       }
 
-      bubble_temp.style.fontSize = "10px"; // ✅ FIX: Fixed font size instead of dialog length
-      bubble_temp.style.transform = `translate(${bubble_x}px, ${bubble_y}px)`; // ✅ FIX: Use rounded coords
+      bubble_temp.style.fontSize = `${Math.max(8, 10 * scaleY)}px`; // ✅ Scale font with panel height for consistency
+      bubble_temp.style.transform = `translate(${bubble_x}px, ${bubble_y}px)`;
+
+      const baseBubbleWidth = Number(page["bubbles"][index]["bubble_width"]);
+      const baseBubbleHeight = Number(page["bubbles"][index]["bubble_height"]);
+      if (!Number.isNaN(baseBubbleWidth) && !Number.isNaN(baseBubbleHeight)) {
+        bubble_temp.style.minWidth = `${baseBubbleWidth * scaleX}px`;
+        bubble_temp.style.maxWidth = `${baseBubbleWidth * scaleX}px`;
+        bubble_temp.style.minHeight = `${baseBubbleHeight * scaleY}px`;
+      }
 
       const tail = document.createElement("div");
       tail.classList.add("tail");
@@ -103,8 +123,10 @@ function placeDialogs(page) {
         tail.style.display = "none";
       } else {
         // ✅ FIX: Use rounded coordinates for tail offset
-        const tail_x = Math.round(page["bubbles"][index]["tail_offset_x"]);
-        const tail_y = Math.round(page["bubbles"][index]["tail_offset_y"]);
+        const rawTailX = Number(page["bubbles"][index]["tail_offset_x"]) || 0;
+        const rawTailY = Number(page["bubbles"][index]["tail_offset_y"]) || 0;
+        const tail_x = rawTailX * scaleX;
+        const tail_y = rawTailY * scaleY;
         tail.style.transform = `translate(${tail_x}px, ${tail_y}px) rotate(${page["bubbles"][index]["tail_deg"]}deg)`;
       }
 

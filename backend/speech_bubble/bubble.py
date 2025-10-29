@@ -1,4 +1,3 @@
-import math
 import json
 import srt
 import pickle
@@ -7,6 +6,7 @@ from backend.speech_bubble.bubble_placement import get_bubble_position, calculat
 from backend.speech_bubble.bubble_shape import get_bubble_type
 from backend.class_def import bubble
 import threading
+from backend.utils import get_panel_type, types
 
 
 def bubble_create(video, crop_coords, black_x, black_y):
@@ -71,7 +71,26 @@ def bubble_create(video, crop_coords, black_x, black_y):
         print(f'||emotion:{emotion}||')
 
 
-        temp = bubble(bubble_x, bubble_y,lip_x,lip_y,sub.content,emotion)
+        if is_normal_page:
+            panel_type = '1'
+        else:
+            panel_type = get_panel_type(*crop_coords[idx_crop])
+
+        panel_info = types[panel_type]
+
+        temp = bubble(
+            bubble_x,
+            bubble_y,
+            lip_x,
+            lip_y,
+            sub.content,
+            emotion,
+            bubble_width,
+            bubble_height,
+            panel_type,
+            panel_info['width'],
+            panel_info['height'],
+        )
         bubbles.append(temp)
 
     return bubbles
