@@ -44,3 +44,136 @@
   transform: translate(0px, 0px) rotate(0deg);
   z-index: -1;
 }
+
+/* ========================================
+   RESPONSIVE MEDIA QUERIES FOR BUBBLES
+   Ensures dialogue readability on all devices
+   ======================================== */
+
+/* Desktop and Large Screens (default - already defined above) */
+/* 1200px and up - No changes needed */
+
+/* Tablets and Medium Screens */
+@media screen and (max-width: 1200px) {
+  .bubble {
+    min-width: 130px;
+    max-width: 190px;
+    font-size: 9.5px;
+    padding: 11px 15px;
+    line-height: 1.35;
+  }
+
+  .tail {
+    border-top: 1.8vh solid transparent;
+    border-bottom: 1.8vh solid transparent;
+    border-left: 9vh solid rgb(255, 255, 255);
+  }
+}
+
+/* Small Tablets and Large Phones (Landscape) */
+@media screen and (max-width: 992px) {
+  .bubble {
+    min-width: 120px;
+    max-width: 180px;
+    min-height: 55px;
+    font-size: 9px;
+    padding: 10px 14px;
+    line-height: 1.3;
+    border-width: 1.5px;
+  }
+
+  .tail {
+    border-top: 1.5vh solid transparent;
+    border-bottom: 1.5vh solid transparent;
+    border-left: 8vh solid rgb(255, 255, 255);
+    border-right: 1.5px solid black;
+  }
+}
+
+/* Phones (Portrait) and Small Tablets */
+@media screen and (max-width: 768px) {
+  .bubble {
+    min-width: 100px;
+    max-width: 160px;
+    min-height: 50px;
+    font-size: 8.5px;
+    padding: 9px 12px;
+    line-height: 1.25;
+    border-width: 1.5px;
+  }
+
+  .tail {
+    border-top: 1.3vh solid transparent;
+    border-bottom: 1.3vh solid transparent;
+    border-left: 7vh solid rgb(255, 255, 255);
+    border-right: 1.5px solid black;
+  }
+}
+
+/* Small Phones */
+@media screen and (max-width: 480px) {
+  .bubble {
+    min-width: 85px;
+    max-width: 140px;
+    min-height: 45px;
+    font-size: 8px;
+    padding: 8px 10px;
+    line-height: 1.2;
+    border-width: 1px;
+  }
+
+  .tail {
+    border-top: 1.2vh solid transparent;
+    border-bottom: 1.2vh solid transparent;
+    border-left: 6vh solid rgb(255, 255, 255);
+    border-right: 1px solid black;
+  }
+}
+
+/* Very Small Phones */
+@media screen and (max-width: 320px) {
+  .bubble {
+    min-width: 70px;
+    max-width: 120px;
+    min-height: 40px;
+    font-size: 7.5px;
+    padding: 7px 9px;
+    line-height: 1.15;
+    border-width: 1px;
+  }
+
+  .tail {
+    border-top: 1vh solid transparent;
+    border-bottom: 1vh solid transparent;
+    border-left: 5vh solid rgb(255, 255, 255);
+    border-right: 1px solid black;
+  }
+}
+
+/* ========================================
+   PRINT MEDIA QUERY FOR BUBBLES
+   ======================================== */
+@media print {
+  .bubble {
+    font-size: 10px; /* Maintain readability in print */
+    border-width: 1px;
+    page-break-inside: avoid;
+  }
+
+  .tail {
+    border-right: 1px solid black;
+  }
+}
+
+/* ========================================
+   HIGH DPI / RETINA DISPLAYS
+   Ensures crisp text rendering
+   ======================================== */
+@media screen and (-webkit-min-device-pixel-ratio: 2),
+  screen and (min-resolution: 192dpi) {
+  .bubble {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+}

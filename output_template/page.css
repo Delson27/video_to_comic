@@ -140,3 +140,175 @@ body {
   aspect-ratio: 1 / 1;
   height: auto;
 }
+
+/* ========================================
+   RESPONSIVE MEDIA QUERIES
+   Ensures consistent layout across all devices
+   ======================================== */
+
+/* Desktop and Large Screens (default - already defined above) */
+/* 1200px and up - No changes needed */
+
+/* Tablets and Medium Screens */
+@media screen and (max-width: 1200px) {
+  .wrapper {
+    max-width: 95vw; /* Use more screen space */
+  }
+
+  .button button {
+    width: 50px;
+    height: 50px;
+    padding: 12px;
+  }
+
+  .button button img {
+    width: 25px;
+    height: 25px;
+  }
+}
+
+/* Small Tablets and Large Phones (Landscape) */
+@media screen and (max-width: 992px) {
+  .wrapper {
+    max-width: 98vw; /* Maximize screen usage */
+  }
+
+  body {
+    padding: 10px 5px; /* Reduce padding */
+  }
+
+  .button button {
+    width: 45px;
+    height: 45px;
+    padding: 10px;
+  }
+
+  .button button img {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* Phones (Portrait) and Small Tablets */
+@media screen and (max-width: 768px) {
+  .wrapper {
+    max-width: 100vw; /* Full width */
+  }
+
+  body {
+    padding: 5px 2px;
+  }
+
+  .grid-container {
+    row-gap: 2px;
+    column-gap: 2px;
+    border-width: 2px;
+  }
+
+  .grid-item {
+    border-width: 2px; /* Thinner borders for small screens */
+  }
+
+  .button button {
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+  }
+
+  .button button img {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Small Phones */
+@media screen and (max-width: 480px) {
+  .wrapper {
+    max-width: 100vw;
+  }
+
+  body {
+    padding: 2px 0;
+  }
+
+  .grid-container {
+    row-gap: 1px;
+    column-gap: 1px;
+    border-width: 1px;
+  }
+
+  .grid-item {
+    border-width: 1px; /* Minimal borders for tiny screens */
+  }
+
+  .button {
+    display: none; /* Hide navigation buttons on very small screens (swipe instead) */
+  }
+}
+
+/* Very Small Phones and Devices */
+@media screen and (max-width: 320px) {
+  .wrapper {
+    max-width: 100vw;
+  }
+
+  .grid-container {
+    row-gap: 1px;
+    column-gap: 1px;
+    border-width: 1px;
+  }
+}
+
+/* ========================================
+   PRINT MEDIA QUERY
+   Ensures clean printing
+   ======================================== */
+@media print {
+  body {
+    background: white;
+    margin: 0;
+    padding: 0;
+  }
+
+  .wrapper {
+    max-width: 100%;
+    background: white;
+  }
+
+  .button {
+    display: none; /* Hide navigation buttons when printing */
+  }
+
+  .grid-container {
+    border: 2px solid black;
+  }
+
+  .grid-item {
+    page-break-inside: avoid; /* Prevent panels from splitting across pages */
+  }
+}
+
+/* ========================================
+   LANDSCAPE ORIENTATION ADJUSTMENTS
+   ======================================== */
+@media screen and (orientation: landscape) and (max-height: 600px) {
+  .wrapper {
+    max-width: 85vw; /* Reduce width in landscape to fit height better */
+  }
+
+  body {
+    padding: 5px;
+  }
+}
+
+/* ========================================
+   HIGH DPI / RETINA DISPLAYS
+   Ensures sharp rendering on high-resolution screens
+   ======================================== */
+@media screen and (-webkit-min-device-pixel-ratio: 2),
+  screen and (min-resolution: 192dpi) {
+  .grid-item img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
