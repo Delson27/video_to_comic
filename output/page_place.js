@@ -59,7 +59,7 @@ function placeDialogs(page) {
       wrapper.style.left = "0";
       wrapper.style.width = "100%";
       wrapper.style.height = "100%";
-      wrapper.style.overflow = "visible"; // ✅ CRITICAL: Allow bubbles to expand beyond panel if needed for visibility
+      wrapper.style.overflow = "hidden"; // ✅ CRITICAL: Clip bubbles to panel boundaries
       wrapper.style.pointerEvents = "none"; // Allow clicking through wrapper
       wrapper.style.zIndex = "10"; // ✅ Ensure bubbles appear above image
 
