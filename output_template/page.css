@@ -82,7 +82,7 @@ body {
   /* ✅ REMOVED background properties - using <img> elements now */
   border: 3px solid black;
   position: relative;
-  overflow: hidden; /* ✅ CRITICAL: Clip bubbles to panel boundaries (prevents overlap with other panels) */
+  overflow: visible; /* ✅ Allow bubbles in bottom letterbox to be visible */
   background-color: #fffacd; /* ✅ Vintage comic paper texture (pale yellow letterbox) */
   /* Alternative options:
      - Solid beige: background-color: #f5f5dc;
