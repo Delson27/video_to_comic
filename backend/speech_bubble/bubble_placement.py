@@ -104,83 +104,77 @@ def get_image_bounds_in_panel(frame_path, crop_coord, panel_type):
         return None
 
 
-def place_bubble_in_letterbox(image_bounds, lip_y, panel_type):
+def place_bubble_in_letterbox(image_bounds, lip_y, panel_type, bubble_width, bubble_height):
     """
-    Place bubble in the letterbox area (top or bottom background space).
-    Chooses top or bottom based on where the speaker's mouth is.
-    Ensures bubble stays COMPLETELY within panel boundaries.
-    Returns (bubble_x, bubble_y) in CSS pixels.
+    🎯 PRECISE BOUNDARY-BASED PLACEMENT:
+    - Image width = Panel width (no left/right letterbox)
+    - Bubble's TOP EDGE touches image's bottom boundary
+    - Bubble extends downward into bottom letterbox area
+    - Stays strictly within panel's bottom boundary
+    
+    Visual:
+    ├─────────────────┤ ← Image bottom boundary
+    ┌─────────────────┐ ← Bubble TOP edge (touches image boundary)
+    │  SPEECH BUBBLE  │ ← Bubble extends into letterbox
+    └─────────────────┘ ← Bubble bottom edge
+    ─────────────────── ← Panel bottom boundary (limit)
+    
+    Returns (bubble_x, bubble_y) in CSS pixels where bubble_y is the TOP of the bubble.
     """
     panel_width = types[panel_type]['width']
     panel_height = types[panel_type]['height']
-    bubble_width = DEFAULT_BUBBLE_WIDTH
-    bubble_height = DEFAULT_BUBBLE_HEIGHT
     
     # Safety margins to keep bubble fully inside panel
-    MARGIN = 8  # Pixels from panel edge
+    MARGIN = 5  # Minimal margin for clean edges
     
     if image_bounds is None:
-        # Fallback: center horizontally, top position
+        # Fallback: place at bottom with margin
         bubble_x = (panel_width - bubble_width) / 2
-        bubble_y = MARGIN
-        print(f"⚠️ No image bounds, using safe fallback at ({bubble_x:.1f}, {bubble_y:.1f})")
+        bubble_y = panel_height - bubble_height - MARGIN
+        print(f"⚠️ No image bounds, using safe fallback at bottom ({bubble_x:.1f}, {bubble_y:.1f})")
         return (bubble_x, bubble_y)
     
-    image_top = image_bounds['image_top']
-    image_bottom = image_bounds['image_bottom']
-    top_space = image_bounds['top_letterbox_height']
+    image_bottom = image_bounds['image_bottom']  # ⭐ This is where bubble TOP edge should be
     bottom_space = image_bounds['bottom_letterbox_height']
     
-    # Center horizontally with margin check
-    bubble_x = max(MARGIN, min((panel_width - bubble_width) / 2, panel_width - bubble_width - MARGIN))
+    # Center horizontally (frame width = panel width, so simple centering)
+    bubble_x = (panel_width - bubble_width) / 2
     
-    image_middle = (image_top + image_bottom) / 2
+    print(f"📏 Image bottom boundary: {image_bottom:.1f}px")
+    print(f"📏 Panel bottom boundary: {panel_height}px")
+    print(f"📏 Available bottom letterbox space: {bottom_space:.1f}px")
+    print(f"📏 Bubble dimensions: {bubble_width}×{bubble_height}px")
     
-    print(f"Lip Y: {lip_y}, Image middle: {image_middle:.1f}, Top space: {top_space:.1f}, Bottom space: {bottom_space:.1f}")
+    # 🎯 CRITICAL: Bubble's TOP EDGE touches image bottom boundary
+    # So bubble_y (which is the top of the bubble) = image_bottom
+    bubble_y = image_bottom
     
-    # Minimum space required (bubble height + margins)
-    MIN_SPACE_REQUIRED = bubble_height + (2 * MARGIN)
+    # Check if bubble fits within panel bottom boundary
+    bubble_bottom_edge = bubble_y + bubble_height
     
-    # Decide placement based on available space and speaker position
-    if lip_y != -1 and lip_y < image_middle:
-        # Mouth in top half - prefer bottom letterbox
-        if bottom_space >= MIN_SPACE_REQUIRED:
-            # Place in bottom letterbox, ensuring it fits
-            bubble_y = min(image_bottom + MARGIN, panel_height - bubble_height - MARGIN)
-            print(f"✅ Placing in BOTTOM letterbox at y={bubble_y:.1f}")
-        elif top_space >= MIN_SPACE_REQUIRED:
-            # Fallback to top letterbox
-            bubble_y = max(MARGIN, image_top - bubble_height - MARGIN)
-            if bubble_y < MARGIN:
-                bubble_y = MARGIN  # Safety clamp
-            print(f"✅ Placing in TOP letterbox at y={bubble_y:.1f}")
-        else:
-            # Insufficient space - place at very top
-            bubble_y = MARGIN
-            print(f"⚠️ Insufficient space, placing at top with margin")
+    if bubble_bottom_edge <= panel_height - MARGIN:
+        # Bubble fits perfectly - keep it touching image boundary
+        print(f"✅ Bubble TOP edge at image boundary: y={bubble_y:.1f}px")
+        print(f"✅ Bubble bottom edge at: y={bubble_bottom_edge:.1f}px (within panel)")
     else:
-        # Mouth in bottom half or unknown - prefer top letterbox
-        if top_space >= MIN_SPACE_REQUIRED:
-            # Place in top letterbox
-            bubble_y = max(MARGIN, image_top - bubble_height - MARGIN)
-            if bubble_y < MARGIN:
-                bubble_y = MARGIN  # Safety clamp
-            print(f"✅ Placing in TOP letterbox at y={bubble_y:.1f}")
-        elif bottom_space >= MIN_SPACE_REQUIRED:
-            # Fallback to bottom letterbox
-            bubble_y = min(image_bottom + MARGIN, panel_height - bubble_height - MARGIN)
-            print(f"✅ Placing in BOTTOM letterbox at y={bubble_y:.1f}")
-        else:
-            # Insufficient space - place at very bottom
-            bubble_y = panel_height - bubble_height - MARGIN
-            print(f"⚠️ Insufficient space, placing at bottom with margin")
+        # Bubble is too tall for available space - push it up slightly
+        bubble_y = panel_height - bubble_height - MARGIN
+        print(f"⚠️ Bubble too tall ({bubble_height}px > {bottom_space:.1f}px available)")
+        print(f"⚠️ Adjusted bubble TOP to: y={bubble_y:.1f}px to fit within panel")
     
-    # Final safety check: ensure bubble is completely within panel
-    bubble_y = max(MARGIN, min(bubble_y, panel_height - bubble_height - MARGIN))
+    # Final safety check: ensure bubble stays within panel boundaries
+    # Left/Right: Keep within panel width (frame width = panel width)
     bubble_x = max(MARGIN, min(bubble_x, panel_width - bubble_width - MARGIN))
     
-    print(f"📍 Final clamped position: ({bubble_x:.1f}, {bubble_y:.1f})")
+    # Top/Bottom: Ensure bubble doesn't exceed panel bottom
+    bubble_y = max(MARGIN, min(bubble_y, panel_height - bubble_height - MARGIN))
+    
+    print(f"📍 Final position: ({bubble_x:.1f}, {bubble_y:.1f})")
+    print(f"📍 Bubble zone: TOP edge y={bubble_y:.1f}, BOTTOM edge y={bubble_y + bubble_height:.1f}")
+    print(f"📍 Panel boundaries: width=0 to {panel_width}px, height=0 to {panel_height}px")
+    
     return (bubble_x, bubble_y)
+
 
 def detect_faces_in_panel(frame_path, crop_coord):
     """
@@ -411,19 +405,19 @@ def get_bubble_position(crop_coord, CAM_data, is_normal_page=False, frame_index=
     else:
         panel_type = get_panel_type(left, right, top, bottom)
     
-    # ✅ NEW APPROACH: Place bubble in letterbox area (background space)
+    # ✅ PRECISE BOUNDARY-BASED PLACEMENT: Place bubble in bottom letterbox only
     if frame_index is not None:
         frame_path = f"frames/final/frame{frame_index:03}.png"
         if os.path.exists(frame_path):
-            print(f"\n🎯 Using LETTERBOX placement for frame {frame_index}")
+            print(f"\n🎯 Using PRECISE BOUNDARY placement for frame {frame_index}")
             
             # Detect where the actual image content is within the panel
             image_bounds = get_image_bounds_in_panel(frame_path, crop_coord, panel_type)
             
-            # Place bubble in top or bottom letterbox area
-            bubble_x, bubble_y = place_bubble_in_letterbox(image_bounds, lip_y, panel_type)
+            # ✅ Pass bubble dimensions to placement function
+            bubble_x, bubble_y = place_bubble_in_letterbox(image_bounds, lip_y, panel_type, bubble_width, bubble_height)
             
-            print(f"✅ Final bubble position: ({bubble_x:.1f}, {bubble_y:.1f}) - IN LETTERBOX AREA")
+            print(f"✅ Final bubble position: ({bubble_x:.1f}, {bubble_y:.1f}) - IN BOTTOM LETTERBOX (STRICT BOUNDARIES)")
             return bubble_x, bubble_y
         else:
             print(f"Warning: Frame {frame_path} not found")

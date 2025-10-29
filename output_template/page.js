@@ -35,7 +35,7 @@ var pages = [
         "bubbles": [
             {
                 "dialog": "So, what's new, Mark?",
-                "emotion": "jagged",
+                "emotion": "normal",
                 "bubble_offset_x": 59.375,
                 "bubble_offset_y": 298.6666666666667,
                 "bubble_x": 59.375,
@@ -48,7 +48,7 @@ var pages = [
             },
             {
                 "dialog": "How is your new job going?",
-                "emotion": "jagged",
+                "emotion": "normal",
                 "bubble_offset_x": 59.375,
                 "bubble_offset_y": 298.6666666666667,
                 "bubble_x": 59.375,
