@@ -82,8 +82,8 @@ body {
   /* ✅ REMOVED background properties - using <img> elements now */
   border: 3px solid black;
   position: relative;
-  overflow: visible; /* ✅ CRITICAL: Allow bubbles to extend beyond panel for visibility */
-  background-color: #fffacd; /* ✅ Vintage comic paper texture */
+  overflow: visible; /* ✅ Allow bubbles in bottom letterbox to be visible */
+  background-color: #fffacd; /* ✅ Vintage comic paper texture (pale yellow letterbox) */
   /* Alternative options:
      - Solid beige: background-color: #f5f5dc;
      - Light cream: background-color: #fffef0;

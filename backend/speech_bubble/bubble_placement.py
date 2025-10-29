@@ -145,29 +145,34 @@ def place_bubble_in_letterbox(image_bounds, lip_y, panel_type, bubble_width, bub
     print(f"📏 Available bottom letterbox space: {bottom_space:.1f}px")
     print(f"📏 Bubble dimensions: {bubble_width}×{bubble_height}px")
     
-    # 🎯 CRITICAL: Bubble's TOP EDGE touches image bottom boundary
-    # So bubble_y (which is the top of the bubble) = image_bottom
+    # 🎯 CRITICAL: Bubble's TOP EDGE should touch image bottom boundary
+    # But ONLY if the bubble will fit within panel bottom boundary
     bubble_y = image_bottom
-    
-    # Check if bubble fits within panel bottom boundary
     bubble_bottom_edge = bubble_y + bubble_height
     
-    if bubble_bottom_edge <= panel_height - MARGIN:
-        # Bubble fits perfectly - keep it touching image boundary
-        print(f"✅ Bubble TOP edge at image boundary: y={bubble_y:.1f}px")
-        print(f"✅ Bubble bottom edge at: y={bubble_bottom_edge:.1f}px (within panel)")
-    else:
-        # Bubble is too tall for available space - push it up slightly
+    # Check if bubble would exceed panel bottom boundary
+    if bubble_bottom_edge > panel_height - MARGIN:
+        # Bubble is too tall - we MUST shrink it or move it up
+        # Move bubble up so bottom edge stays within panel
         bubble_y = panel_height - bubble_height - MARGIN
         print(f"⚠️ Bubble too tall ({bubble_height}px > {bottom_space:.1f}px available)")
         print(f"⚠️ Adjusted bubble TOP to: y={bubble_y:.1f}px to fit within panel")
+        print(f"⚠️ Bubble will NOT touch image boundary (not enough space)")
+    else:
+        # Bubble fits perfectly - keep it touching image boundary
+        print(f"✅ Bubble TOP edge at image boundary: y={bubble_y:.1f}px")
+        print(f"✅ Bubble bottom edge at: y={bubble_bottom_edge:.1f}px (within panel)")
     
-    # Final safety check: ensure bubble stays within panel boundaries
-    # Left/Right: Keep within panel width (frame width = panel width)
+    # CRITICAL FINAL SAFETY: Absolutely ensure bubble stays within panel
+    # This is the ultimate guard - bubble CANNOT exceed these bounds
     bubble_x = max(MARGIN, min(bubble_x, panel_width - bubble_width - MARGIN))
+    bubble_y = max(MARGIN, bubble_y)  # Don't go above panel top
     
-    # Top/Bottom: Ensure bubble doesn't exceed panel bottom
-    bubble_y = max(MARGIN, min(bubble_y, panel_height - bubble_height - MARGIN))
+    # 🔒 ABSOLUTE RULE: Bubble bottom edge MUST be within panel
+    max_allowed_y = panel_height - bubble_height - MARGIN
+    if bubble_y > max_allowed_y:
+        bubble_y = max_allowed_y
+        print(f"🔒 CLAMPED: Forced bubble_y to {bubble_y:.1f} to prevent exceeding panel bottom")
     
     print(f"📍 Final position: ({bubble_x:.1f}, {bubble_y:.1f})")
     print(f"📍 Bubble zone: TOP edge y={bubble_y:.1f}, BOTTOM edge y={bubble_y + bubble_height:.1f}")
