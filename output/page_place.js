@@ -70,21 +70,23 @@ function placeDialogs(page) {
 
       const emotion = page["bubbles"][index]["emotion"];
 
-  // ✅ Responsive scaling: convert backend CSS pixels to current panel size
-  const basePanelWidth = Number(page["bubbles"][index]["panel_width"]) || gridItem.clientWidth;
-  const basePanelHeight = Number(page["bubbles"][index]["panel_height"]) || gridItem.clientHeight;
+      // ✅ Responsive scaling: convert backend CSS pixels to current panel size
+      const basePanelWidth =
+        Number(page["bubbles"][index]["panel_width"]) || gridItem.clientWidth;
+      const basePanelHeight =
+        Number(page["bubbles"][index]["panel_height"]) || gridItem.clientHeight;
 
-  const actualPanelWidth = gridItem.clientWidth;
-  const actualPanelHeight = gridItem.clientHeight;
+      const actualPanelWidth = gridItem.clientWidth;
+      const actualPanelHeight = gridItem.clientHeight;
 
-  const scaleX = actualPanelWidth / basePanelWidth;
-  const scaleY = actualPanelHeight / basePanelHeight;
+      const scaleX = actualPanelWidth / basePanelWidth;
+      const scaleY = actualPanelHeight / basePanelHeight;
 
-  const rawBubbleX = Number(page["bubbles"][index]["bubble_offset_x"]) || 0;
-  const rawBubbleY = Number(page["bubbles"][index]["bubble_offset_y"]) || 0;
+      const rawBubbleX = Number(page["bubbles"][index]["bubble_offset_x"]) || 0;
+      const rawBubbleY = Number(page["bubbles"][index]["bubble_offset_y"]) || 0;
 
-  const bubble_x = rawBubbleX * scaleX;
-  const bubble_y = rawBubbleY * scaleY;
+      const bubble_x = rawBubbleX * scaleX;
+      const bubble_y = rawBubbleY * scaleY;
 
       if (emotion == "jagged") {
         bubble_temp.style.backgroundImage = `url("assets/jagged.png")`;
