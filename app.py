@@ -1,6 +1,5 @@
 import os
 import shutil
-import webbrowser
 import time
 import warnings
 import uuid
@@ -151,28 +150,6 @@ def progress(job_id):
             time.sleep(1)
             
     return Response(generate(), mimetype='text/event-stream')
-
-@app.route('/uploader', methods=['GET', 'POST'])
-def upload_file():
-    if request.method == 'POST':
-        print(dict(request.form))  
-        f = request.files['file']  #we got the file as file storage object from frontend
-        print(type(f))
-        cleanup()
-        f.save("video/uploaded.mp4")
-        copy_template()
-        return "Comic created Successfully"
-    
-
-@app.route('/handle_link', methods=['GET', 'POST'])
-def handle_link():
-    if request.method == 'POST':
-        print(dict(request.form))  
-        link = request.form['link']
-        cleanup()
-        download_video(link)
-        copy_template()
-        return "Comic created Successfully"
 
 # Route to serve the generated comic and its assets
 @app.route('/output/<path:filename>')

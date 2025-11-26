@@ -8,7 +8,7 @@ bubble.js
 dlib-19.24.1-cp311-cp311-win_amd64.whl
 output_template/page.js
 output/page.js
-*.pkl
+
 output/*
 audio.mp3
 testing/*

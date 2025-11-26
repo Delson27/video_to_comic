@@ -382,14 +382,13 @@ def add_bubble_padding(least_roi_x, least_roi_y, crop_coord, bubble_width, bubbl
     return least_roi_x, least_roi_y
 
 
-def get_bubble_position(crop_coord, CAM_data, is_normal_page=False, frame_index=None, bubble_width=None, bubble_height=None, lip_y=-1):
+def get_bubble_position(crop_coord, is_normal_page=False, frame_index=None, bubble_width=None, bubble_height=None, lip_y=-1):
     """
     Get optimal bubble position in the letterbox areas (background space) of the panel.
     Places bubbles OUTSIDE the image content, in the top or bottom letterbox areas.
     
     Args:
         crop_coord: Tuple of (left, right, top, bottom) coordinates
-        CAM_data: Dictionary with CAM heatmap data  
         is_normal_page: Boolean indicating if this is a normal page
         frame_index: Frame number (1-indexed) to load the corresponding image
         bubble_width: Dynamic bubble width (defaults to DEFAULT_BUBBLE_WIDTH)
