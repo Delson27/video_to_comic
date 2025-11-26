@@ -62,7 +62,8 @@
       </div>
       <div class="box" id="box">
         <h1 id="title">AutoComic</h1>
-        <p id="description">An automated video-to-comic generator</p>
+        <p id="description">Transform your videos into stunning comic strips</p>
+        <p id="subdescription">Upload a video or paste a link to get started</p>
         <div class="button-container">
           <input
             type="file"
@@ -70,25 +71,39 @@
             accept=".mp4"
             style="display: none"
           />
-          <button onclick="openFilePicker()" class="icon-button">
-            <img
-              src="{{url_for('static', filename='images/upload.png')}}"
-              alt="Upload Video"
-            />
-          </button>
-          <button onclick="toggleLinkInput()" class="icon-button">
-            <img
-              src="{{url_for('static', filename='images/link.png')}}"
-              alt="Enter Link"
-            />
-          </button>
+          <div class="upload-option">
+            <button
+              onclick="openFilePicker()"
+              class="icon-button"
+              title="Upload Video File"
+            >
+              <img
+                src="{{url_for('static', filename='images/upload.png')}}"
+                alt="Upload Video"
+              />
+            </button>
+            <span class="button-label">Upload Video</span>
+          </div>
+          <div class="upload-option">
+            <button
+              onclick="toggleLinkInput()"
+              class="icon-button"
+              title="Enter YouTube Link"
+            >
+              <img
+                src="{{url_for('static', filename='images/link.png')}}"
+                alt="Enter Link"
+              />
+            </button>
+            <span class="button-label">Paste Link</span>
+          </div>
         </div>
         <div id="linkInputContainer" style="display: none">
-          <input type="text" id="link-input" placeholder="Enter Link" />
+          <input type="text" id="link-input" placeholder="Paste URL here..." />
         </div>
         <p id="fileName"></p>
         <button onclick="submitForm()" class="submit-button" id="submitButton">
-          Submit
+          Generate Comic
         </button>
         <p id="submissionResult"></p>
 
@@ -110,58 +125,60 @@
         <div id="resultButtons" style="display: none">
           <button
             onclick="previewComic()"
-            class="submit-button"
+            class="submit-button preview-btn"
             id="previewButton"
           >
-            Preview Comic
+            👁️ View Comic
           </button>
           <button
             onclick="downloadPDF()"
-            class="submit-button"
+            class="submit-button download-btn"
             id="downloadButton"
           >
-            Download as PDF
+            ⬇️ Download PDF
           </button>
         </div>
       </div>
     </div>
     <!-- PDF Download Progress Modal -->
-    <div id="pdfDownloadModal" class="pdf-modal" style="display: none;">
+    <div id="pdfDownloadModal" class="pdf-modal" style="display: none">
       <div class="pdf-modal-content">
         <h3 id="pdfModalTitle">Preparing PDF...</h3>
         <div class="pdf-progress-container">
           <div id="pdfProgressBar" class="pdf-progress-bar"></div>
           <div id="pdfProgressText" class="pdf-progress-text">0%</div>
         </div>
-        <p id="pdfModalMessage" class="pdf-modal-message">Rendering comic pages...</p>
+        <p id="pdfModalMessage" class="pdf-modal-message">
+          Rendering comic pages...
+        </p>
         <div id="pdfModalIcon" class="pdf-modal-icon"></div>
       </div>
     </div>
 
     <script>
       function downloadPDF() {
-        const modal = document.getElementById('pdfDownloadModal');
-        const modalTitle = document.getElementById('pdfModalTitle');
-        const modalMessage = document.getElementById('pdfModalMessage');
-        const modalIcon = document.getElementById('pdfModalIcon');
-        const progressBar = document.getElementById('pdfProgressBar');
-        const progressText = document.getElementById('pdfProgressText');
-        const downloadBtn = document.getElementById('downloadButton');
+        const modal = document.getElementById("pdfDownloadModal");
+        const modalTitle = document.getElementById("pdfModalTitle");
+        const modalMessage = document.getElementById("pdfModalMessage");
+        const modalIcon = document.getElementById("pdfModalIcon");
+        const progressBar = document.getElementById("pdfProgressBar");
+        const progressText = document.getElementById("pdfProgressText");
+        const downloadBtn = document.getElementById("downloadButton");
 
         // Show modal
-        modal.style.display = 'flex';
+        modal.style.display = "flex";
         downloadBtn.disabled = true;
-        downloadBtn.textContent = 'Downloading...';
-        downloadBtn.style.opacity = '0.6';
+        downloadBtn.textContent = "Downloading...";
+        downloadBtn.style.opacity = "0.6";
 
         // Reset modal state
-        modalTitle.textContent = 'Preparing PDF...';
-        modalMessage.textContent = 'Rendering comic pages...';
-        modalIcon.className = 'pdf-modal-icon';
-        modalIcon.innerHTML = '';
-        progressBar.style.width = '0%';
-        progressBar.style.backgroundColor = '#3b82f6';
-        progressText.textContent = '0%';
+        modalTitle.textContent = "Preparing PDF...";
+        modalMessage.textContent = "Rendering comic pages...";
+        modalIcon.className = "pdf-modal-icon";
+        modalIcon.innerHTML = "";
+        progressBar.style.width = "0%";
+        progressBar.style.backgroundColor = "#3b82f6";
+        progressText.textContent = "0%";
 
         // Simulate progress (since PDF generation happens on backend)
         let progress = 0;
@@ -169,16 +186,16 @@
           if (progress < 90) {
             progress += Math.random() * 15;
             if (progress > 90) progress = 90;
-            progressBar.style.width = progress + '%';
-            progressText.textContent = Math.round(progress) + '%';
-            
+            progressBar.style.width = progress + "%";
+            progressText.textContent = Math.round(progress) + "%";
+
             // Update message based on progress
             if (progress < 30) {
-              modalMessage.textContent = 'Rendering comic pages...';
+              modalMessage.textContent = "Rendering comic pages...";
             } else if (progress < 60) {
-              modalMessage.textContent = 'Compressing images...';
+              modalMessage.textContent = "Compressing images...";
             } else {
-              modalMessage.textContent = 'Finalizing PDF...';
+              modalMessage.textContent = "Finalizing PDF...";
             }
           }
         }, 200);
@@ -194,17 +211,18 @@
           })
           .then((blob) => {
             clearInterval(progressInterval);
-            
+
             // Complete progress
-            progressBar.style.width = '100%';
-            progressBar.style.backgroundColor = '#22c55e';
-            progressText.textContent = '100%';
-            
+            progressBar.style.width = "100%";
+            progressBar.style.backgroundColor = "#22c55e";
+            progressText.textContent = "100%";
+
             // Show success state
-            modalTitle.textContent = 'Download Complete!';
-            modalMessage.textContent = 'Your comic PDF has been downloaded successfully.';
-            modalIcon.className = 'pdf-modal-icon success';
-            modalIcon.innerHTML = '✓';
+            modalTitle.textContent = "Download Complete!";
+            modalMessage.textContent =
+              "Your comic PDF has been downloaded successfully.";
+            modalIcon.className = "pdf-modal-icon success";
+            modalIcon.innerHTML = "✓";
 
             // Create a download link and trigger it
             const url = window.URL.createObjectURL(blob);
@@ -218,44 +236,45 @@
 
             // Reset button
             downloadBtn.disabled = false;
-            downloadBtn.textContent = 'Download as PDF';
-            downloadBtn.style.opacity = '1';
+            downloadBtn.textContent = "Download as PDF";
+            downloadBtn.style.opacity = "1";
 
             // Close modal after 2 seconds
             setTimeout(() => {
-              modal.style.display = 'none';
+              modal.style.display = "none";
             }, 2000);
           })
           .catch((error) => {
             clearInterval(progressInterval);
-            
+
             // Show error state
-            progressBar.style.width = '100%';
-            progressBar.style.backgroundColor = '#ef4444';
-            progressText.textContent = 'Failed';
-            
-            modalTitle.textContent = 'Download Failed';
-            modalMessage.textContent = error.message || 'An error occurred while generating the PDF.';
-            modalIcon.className = 'pdf-modal-icon error';
-            modalIcon.innerHTML = '✕';
+            progressBar.style.width = "100%";
+            progressBar.style.backgroundColor = "#ef4444";
+            progressText.textContent = "Failed";
+
+            modalTitle.textContent = "Download Failed";
+            modalMessage.textContent =
+              error.message || "An error occurred while generating the PDF.";
+            modalIcon.className = "pdf-modal-icon error";
+            modalIcon.innerHTML = "✕";
 
             // Reset button
             downloadBtn.disabled = false;
-            downloadBtn.textContent = 'Download as PDF';
-            downloadBtn.style.opacity = '1';
+            downloadBtn.textContent = "Download as PDF";
+            downloadBtn.style.opacity = "1";
 
             // Close modal after 3 seconds
             setTimeout(() => {
-              modal.style.display = 'none';
+              modal.style.display = "none";
             }, 3000);
           });
       }
 
       // Allow closing modal by clicking outside
-      window.onclick = function(event) {
-        const modal = document.getElementById('pdfDownloadModal');
+      window.onclick = function (event) {
+        const modal = document.getElementById("pdfDownloadModal");
         if (event.target === modal) {
-          modal.style.display = 'none';
+          modal.style.display = "none";
         }
       };
     </script>

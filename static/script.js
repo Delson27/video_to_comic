@@ -41,8 +41,12 @@ function openFilePicker() {
 
 filePicker.addEventListener("change", function () {
   selectedFile = this.files[0];
-  document.getElementById("fileName").textContent =
-    "Selected File: " + selectedFile.name;
+  if (selectedFile) {
+    const fileSizeMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
+    document.getElementById("fileName").textContent =
+      "✓ " + selectedFile.name + " (" + fileSizeMB + " MB)";
+    document.getElementById("fileName").style.color = "#22c55e";
+  }
   hideLinkInput();
   showVideoPreview(URL.createObjectURL(selectedFile));
 });
@@ -83,8 +87,18 @@ function convertToEmbed(url) {
 linkInput.addEventListener("input", function () {
   selectedLink = this.value;
   selectedFile = null;
-  document.getElementById("fileName").textContent = "";
-  showIFramePreview(convertToEmbed(selectedLink));
+  const fileNameElem = document.getElementById("fileName");
+
+  if (selectedLink && convertToEmbed(selectedLink)) {
+    fileNameElem.textContent = "✓ YouTube link detected";
+    fileNameElem.style.color = "#22c55e";
+    showIFramePreview(convertToEmbed(selectedLink));
+  } else if (selectedLink) {
+    fileNameElem.textContent = "⚠ Invalid YouTube URL";
+    fileNameElem.style.color = "#fbbf24";
+  } else {
+    fileNameElem.textContent = "";
+  }
 });
 
 function showResultButtons() {
@@ -108,18 +122,23 @@ function submitForm() {
 
   if (!selectedFile && selectedLink === "") {
     submissionResult.textContent =
-      "Please select a file or enter a link first.";
+      "⚠ Please upload a video or enter a YouTube link first";
+    submissionResult.style.color = "#fbbf24";
     return;
   }
 
-  submitBtn.textContent = "Generating...";
+  submitBtn.textContent = "⏳ Generating...";
   submitBtn.disabled = true;
+  submitBtn.style.opacity = "0.7";
   submissionResult.textContent = "";
   progressContainer.style.display = "block";
   progressBar.style.width = "0%";
-  progressBar.style.backgroundColor = "#3b82f6";
+  progressBar.style.background =
+    "linear-gradient(90deg, #3b82f6 0%, #60a5fa 50%, #3b82f6 100%)";
+  progressBar.style.backgroundSize = "200% 100%";
   progressTextOverlay.textContent = "0%";
-  progressText.textContent = "Starting job...";
+  progressText.textContent = "🚀 Starting your comic generation...";
+  progressText.style.color = "rgba(255, 255, 255, 0.8)";
   resultButtons.style.display = "none";
 
   const formdata = new FormData();
@@ -143,26 +162,43 @@ function submitForm() {
           progressText.textContent = status.message;
 
           if (status.progress >= 100) {
-            progressBar.style.backgroundColor = "#22c55e";
-            submitBtn.textContent = "Submit";
+            progressBar.style.background =
+              "linear-gradient(90deg, #22c55e 0%, #16a34a 100%)";
+            progressBar.style.animation = "none";
+            submitBtn.textContent = "Generate Comic";
             submitBtn.disabled = false;
+            submitBtn.style.opacity = "1";
+            progressText.textContent = "🎉 Your comic is ready!";
+            progressText.style.color = "#22c55e";
             resultButtons.style.display = "flex";
             source.close();
           }
 
           if (status.progress === -1) {
-            progressBar.style.backgroundColor = "#ef4444";
-            submitBtn.textContent = "Try Again";
+            progressBar.style.background =
+              "linear-gradient(90deg, #ef4444 0%, #dc2626 100%)";
+            progressBar.style.animation = "none";
+            progressText.textContent =
+              "❌ " + (status.message || "An error occurred");
+            progressText.style.color = "#ef4444";
+            submitBtn.textContent = "🔄 Try Again";
             submitBtn.disabled = false;
+            submitBtn.style.opacity = "1";
             source.close();
           }
         };
 
         source.onerror = function (err) {
           console.error("EventSource failed:", err);
-          progressText.textContent = "Connection to server lost.";
-          submitBtn.textContent = "Try Again";
+          progressText.textContent =
+            "❌ Connection to server lost. Please try again.";
+          progressText.style.color = "#ef4444";
+          progressBar.style.background =
+            "linear-gradient(90deg, #ef4444 0%, #dc2626 100%)";
+          progressBar.style.animation = "none";
+          submitBtn.textContent = "🔄 Try Again";
           submitBtn.disabled = false;
+          submitBtn.style.opacity = "1";
           source.close();
         };
       } else {
@@ -171,9 +207,16 @@ function submitForm() {
     })
     .catch((error) => {
       console.error("Error starting job:", error);
-      progressText.textContent = "Could not start the job.";
-      submitBtn.textContent = "Try Again";
+      progressText.textContent =
+        "❌ Could not start the job. Please check your connection.";
+      progressText.style.color = "#ef4444";
+      progressBar.style.background =
+        "linear-gradient(90deg, #ef4444 0%, #dc2626 100%)";
+      progressBar.style.animation = "none";
+      progressContainer.style.display = "block";
+      submitBtn.textContent = "🔄 Try Again";
       submitBtn.disabled = false;
+      submitBtn.style.opacity = "1";
     });
 }
 
